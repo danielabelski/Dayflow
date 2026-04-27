@@ -3,6 +3,7 @@
     {
       "filename" : "ChatGPT.svg",
       "idiom" : "universal",
+      "preserves-vector-representation" : true,
       "scale" : "1x"
     },
     {
