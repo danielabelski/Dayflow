@@ -95,10 +95,10 @@ final class LLMService: LLMServicing {
   }
 
   private func makeDayflowProvider(endpoint: String) -> DayflowBackendProvider? {
-    let token = AnalyticsService.shared.backendAuthToken()
+    let token = DayflowAuthManager.storedSessionToken()?
       .trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !token.isEmpty else {
-      print("❌ [LLMService] Failed to resolve backend auth token from analytics distinct ID")
+    guard let token, !token.isEmpty else {
+      print("❌ [LLMService] Failed to resolve Dayflow session token")
       return nil
     }
     return DayflowBackendProvider(token: token, endpoint: endpoint)
