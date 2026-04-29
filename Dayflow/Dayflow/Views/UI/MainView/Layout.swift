@@ -131,6 +131,11 @@ extension MainView {
           selectedIcon = .weekly
         }
       }
+      .onReceive(NotificationCenter.default.publisher(for: .navigateToWeekly)) { _ in
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+          selectedIcon = .weekly
+        }
+      }
       .onReceive(NotificationCenter.default.publisher(for: .showTimelineFailureToast)) {
         handleShowTimelineFailureToastNotification($0)
       }
