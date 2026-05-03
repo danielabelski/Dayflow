@@ -98,9 +98,12 @@ final class LLMService: LLMServicing {
     let token = DayflowAuthManager.storedSessionToken()?
       .trimmingCharacters(in: .whitespacesAndNewlines)
     guard let token, !token.isEmpty else {
-      print("❌ [LLMService] Failed to resolve Dayflow session token")
+      print("❌ [LLMService] Dayflow provider unavailable: missing session token")
       return nil
     }
+    print(
+      "🔐 [LLMService] Dayflow provider ready endpoint=\(endpoint) token_length=\(token.count)"
+    )
     return DayflowBackendProvider(token: token, endpoint: endpoint)
   }
 
@@ -281,11 +284,6 @@ final class LLMService: LLMServicing {
     guard let backupProvider = LLMProviderRoutingPreferences.loadBackupProvider(),
       backupProvider != primaryProviderID
     else {
-      return nil
-    }
-
-    // Dayflow backend isn't currently supported in provider settings.
-    if backupProvider == .dayflow {
       return nil
     }
 
@@ -588,6 +586,10 @@ final class LLMService: LLMServicing {
       }
       var backupConfigured = false
       var lastProcessingStep: LLMProcessingStep?
+      print(
+        "🧭 [LLMService] processBatch selected primary=\(primaryProviderID.analyticsName) "
+          + "label=\(primaryProviderLabel) backup=\(configuredBackup?.id.analyticsName ?? "none")"
+      )
 
       do {
         print("\n📦 [LLMService] Processing batch \(batchId)")
