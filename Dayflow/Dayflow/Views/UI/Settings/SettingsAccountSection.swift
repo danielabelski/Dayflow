@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SettingsAccountSection: View {
@@ -7,11 +8,10 @@ struct SettingsAccountSection: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: SettingsStyle.sectionSpacing) {
-      accountSection
-
       if authManager.entitlements.status == "active" {
         currentPlanSection
       } else {
+        accountSection
         upgradeSection
       }
 
@@ -43,7 +43,7 @@ struct SettingsAccountSection: View {
           label: "Dayflow account",
           subtitle: authManager.isSignedIn
             ? authManager.displayIdentity
-            : "Use your email. No password, browser, or API keys.",
+            : nil,
           showsDivider: authManager.isSignedIn
         ) {
           HStack(spacing: 8) {
@@ -54,10 +54,10 @@ struct SettingsAccountSection: View {
 
             if authManager.isSignedIn {
               SettingsSecondaryButton(
-                title: "Refresh",
-                systemImage: "arrow.clockwise",
+                title: "Sign out",
+                systemImage: "rectangle.portrait.and.arrow.right",
                 isDisabled: authManager.isBusy,
-                action: { Task { await authManager.refreshAccount() } }
+                action: { Task { await authManager.signOut() } }
               )
             } else {
               SettingsPrimaryButton(
@@ -75,19 +75,16 @@ struct SettingsAccountSection: View {
 
   private var currentPlanSection: some View {
     SettingsSection(
-      title: "Current plan",
-      subtitle: "Your Pro access is active on this account."
+      title: "Account",
+      subtitle: "Manage your Dayflow account and subscription."
     ) {
-      SettingsRow(
-        label: "Plan",
-        subtitle: currentPlanSubtitle,
-        showsDivider: false
-      ) {
-        SettingsStatusDot(
-          state: .good,
-          label: authManager.entitlements.displayName
-        )
-      }
+      ActiveProCard(
+        entitlement: authManager.entitlements,
+        email: authManager.displayIdentity,
+        isBusy: authManager.isBusy,
+        signOutAction: { Task { await authManager.signOut() } },
+        manageBillingAction: { Task { await authManager.openBillingPortal() } }
+      )
     }
   }
 
@@ -113,9 +110,9 @@ struct SettingsAccountSection: View {
 
           BillingPlanCard(
             title: "Yearly",
-            price: "$180",
-            cadence: "/yr",
-            note: "$15/mo effective. Save $36.",
+            price: "$15",
+            cadence: "/mo",
+            note: "Billed yearly.",
             badge: "2 months free",
             isSelected: selectedBillingInterval == .yearly
           ) {
@@ -124,6 +121,7 @@ struct SettingsAccountSection: View {
             }
           }
         }
+        .padding(.leading, 2)
 
         ProFeatureList()
 
@@ -135,28 +133,18 @@ struct SettingsAccountSection: View {
             action: upgradeAction
           )
 
-          Text(upgradeFootnote)
-            .font(.custom("Nunito", size: 12))
-            .foregroundColor(SettingsStyle.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Cancel any time. No-questions-asked refunds.")
+              .font(.custom("Nunito", size: 12))
+              .foregroundColor(SettingsStyle.secondary)
+              .fixedSize(horizontal: false, vertical: true)
+
+            SettingsLinkButton(title: "Privacy policy", systemImage: "lock") {
+              openPrivacyPolicy()
+            }
+          }
         }
       }
-    }
-  }
-
-  private var currentPlanSubtitle: String {
-    if let currentPeriodEnd = authManager.entitlements.currentPeriodEnd, !currentPeriodEnd.isEmpty {
-      return "Renews through \(currentPeriodEnd)."
-    }
-    return "Active on this account."
-  }
-
-  private var upgradeFootnote: String {
-    switch selectedBillingInterval {
-    case .monthly:
-      return "14 days free, then $18/month. Cancel anytime in Stripe."
-    case .yearly:
-      return "14 days free, then $180/year. Best value."
     }
   }
 
@@ -169,6 +157,205 @@ struct SettingsAccountSection: View {
     Task {
       await authManager.openBillingCheckout(interval: selectedBillingInterval)
     }
+  }
+
+  private func openPrivacyPolicy() {
+    guard let url = URL(string: "https://dayflow.so/privacy") else { return }
+    NSWorkspace.shared.open(url)
+  }
+}
+
+private func formattedEntitlementDate(_ value: String?) -> String? {
+  guard let value, !value.isEmpty else { return nil }
+
+  if value.count >= 10 {
+    let datePrefix = String(value.prefix(10))
+    let dateOnlyFormatter = DateFormatter()
+    dateOnlyFormatter.locale = Locale(identifier: "en_US_POSIX")
+    dateOnlyFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+    dateOnlyFormatter.dateFormat = "yyyy-MM-dd"
+
+    if let date = dateOnlyFormatter.date(from: datePrefix) {
+      let displayFormatter = DateFormatter()
+      displayFormatter.locale = Locale.current
+      displayFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+      displayFormatter.dateStyle = .medium
+      displayFormatter.timeStyle = .none
+      return displayFormatter.string(from: date)
+    }
+  }
+
+  let formatters: [ISO8601DateFormatter] = [
+    {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+      return formatter
+    }(),
+    {
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions = [.withInternetDateTime]
+      return formatter
+    }(),
+  ]
+
+  let date = formatters.compactMap { $0.date(from: value) }.first
+  guard let date else { return nil }
+
+  let displayFormatter = DateFormatter()
+  displayFormatter.locale = Locale.current
+  displayFormatter.dateStyle = .medium
+  displayFormatter.timeStyle = .none
+  return displayFormatter.string(from: date)
+}
+
+private struct ActiveProCard: View {
+  let entitlement: DayflowEntitlement
+  let email: String
+  let isBusy: Bool
+  let signOutAction: () -> Void
+  let manageBillingAction: () -> Void
+
+  private var isGifted: Bool {
+    entitlement.source == "manual"
+  }
+
+  private var title: String {
+    isGifted ? "Gifted Pro" : "Dayflow Pro"
+  }
+
+  private var badge: String {
+    isGifted ? "Gifted" : "Active"
+  }
+
+  private var description: String {
+    if isGifted {
+      return
+        "You have complimentary Dayflow Pro access. There is no billing to manage for this account."
+    }
+
+    return "Your Pro access is active on this Mac and attached to your Dayflow account."
+  }
+
+  private var dateLabel: String {
+    if formattedEntitlementDate(entitlement.currentPeriodEnd) == nil {
+      return "Status"
+    }
+
+    return isGifted ? "Access through" : "Renews"
+  }
+
+  private var dateValue: String {
+    formattedEntitlementDate(entitlement.currentPeriodEnd) ?? "Active"
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 18) {
+      HStack(alignment: .top, spacing: 16) {
+        ZStack {
+          RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(SettingsStyle.ink.opacity(0.1))
+          Image(systemName: isGifted ? "gift.fill" : "star.fill")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundColor(SettingsStyle.ink)
+        }
+        .frame(width: 34, height: 34)
+
+        VStack(alignment: .leading, spacing: 5) {
+          HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(title)
+              .font(.custom("Nunito", size: 22))
+              .fontWeight(.bold)
+              .foregroundColor(SettingsStyle.text)
+
+            SettingsBadge(text: badge.uppercased(), isAccent: true)
+          }
+
+          Text(description)
+            .font(.custom("Nunito", size: 13))
+            .foregroundColor(SettingsStyle.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+
+        Spacer(minLength: 16)
+
+        SettingsStatusDot(state: .good, label: "Active")
+          .padding(.top, 4)
+      }
+
+      HStack(alignment: .top, spacing: 12) {
+        ActiveProInfoTile(label: "Signed in as", value: email)
+        ActiveProInfoTile(label: dateLabel, value: dateValue)
+      }
+
+      Rectangle()
+        .fill(SettingsStyle.divider)
+        .frame(height: 1)
+
+      HStack(alignment: .center, spacing: 16) {
+        ProFeatureList()
+
+        Spacer(minLength: 16)
+
+        HStack(spacing: 8) {
+          SettingsSecondaryButton(
+            title: "Sign out",
+            systemImage: "rectangle.portrait.and.arrow.right",
+            isDisabled: isBusy,
+            action: signOutAction
+          )
+
+          if !isGifted {
+            SettingsPrimaryButton(
+              title: "Manage billing",
+              systemImage: "creditcard",
+              isLoading: isBusy,
+              action: manageBillingAction
+            )
+          }
+        }
+      }
+    }
+    .padding(18)
+    .background(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .fill(Color.white.opacity(0.42))
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .stroke(SettingsStyle.divider, lineWidth: 1)
+    )
+  }
+}
+
+private struct ActiveProInfoTile: View {
+  let label: String
+  let value: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      Text(label.uppercased())
+        .font(.custom("Nunito", size: 10))
+        .fontWeight(.bold)
+        .kerning(0.5)
+        .foregroundColor(SettingsStyle.meta)
+
+      Text(value)
+        .font(.custom("Nunito", size: 14))
+        .fontWeight(.semibold)
+        .foregroundColor(SettingsStyle.text)
+        .lineLimit(1)
+        .truncationMode(.middle)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(12)
+    .background(
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .fill(Color.white.opacity(0.45))
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .stroke(SettingsStyle.divider, lineWidth: 1)
+    )
   }
 }
 
@@ -232,6 +419,7 @@ private struct ProFeatureList: View {
   private let features = [
     "Zero setup cloud AI for timeline generation",
     "Daily and weekly reports without provider setup",
+    "Priority support",
     "Processed securely and never used to train AI models",
   ]
 
@@ -273,6 +461,7 @@ private struct DayflowSignInSheet: View {
 
   @State private var step: Step = .email
   @State private var emailAddress = ""
+  @State private var verificationEmail: String?
   @State private var verificationCode = ""
   @State private var didAutoSubmitCode = false
 
@@ -317,7 +506,7 @@ private struct DayflowSignInSheet: View {
       Text(
         step == .email
           ? "Enter your email and Dayflow will send a 6 digit code."
-          : "Enter the code sent to \(authManager.pendingEmail ?? emailAddressTrimmed)."
+          : "Enter the code sent to \(verificationEmail ?? authManager.pendingEmail ?? emailAddressTrimmed)."
       )
       .font(.custom("Nunito", size: 13))
       .foregroundColor(SettingsStyle.secondary)
@@ -398,7 +587,8 @@ private struct DayflowSignInSheet: View {
             Task {
               didAutoSubmitCode = false
               verificationCode = ""
-              await authManager.resendCode()
+              await authManager.sendCode(to: verificationEmail ?? emailAddressTrimmed)
+              verificationEmail = authManager.pendingEmail ?? verificationEmail
               focusedField = .code
             }
           }
@@ -409,6 +599,7 @@ private struct DayflowSignInSheet: View {
           isDisabled: authManager.isBusy,
           action: {
             authManager.useDifferentEmail()
+            verificationEmail = nil
             verificationCode = ""
             didAutoSubmitCode = false
             step = .email
@@ -424,6 +615,7 @@ private struct DayflowSignInSheet: View {
     Task {
       await authManager.sendCode(to: emailAddressTrimmed)
       if authManager.canVerifyCode, authManager.errorText == nil {
+        verificationEmail = authManager.pendingEmail ?? emailAddressTrimmed
         verificationCode = ""
         didAutoSubmitCode = false
         step = .code
@@ -434,8 +626,13 @@ private struct DayflowSignInSheet: View {
 
   private func verifyCode() {
     guard verificationCodeTrimmed.count == 6 else { return }
+    guard let email = verificationEmail ?? authManager.pendingEmail else {
+      step = .email
+      focusedField = .email
+      return
+    }
     Task {
-      await authManager.verifyCode(verificationCodeTrimmed)
+      await authManager.verifyCode(verificationCodeTrimmed, for: email)
       if authManager.errorText != nil {
         didAutoSubmitCode = false
       }
