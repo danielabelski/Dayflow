@@ -3,6 +3,10 @@ import GRDB
 import Sentry
 
 extension StorageManager {
+  private static let maxStoredLLMBodyCharacters = 64 * 1024
+  private static let llmBodyTruncationBatchSize = 100
+  private static let llmBodyTruncationMaxBatches = 50
+
   // MARK: - WAL Checkpoint
 
   /// Checkpoint the WAL file to merge changes into the main database.
@@ -265,6 +269,85 @@ extension StorageManager {
     }
     timer.resume()
     purgeTimer = timer
+  }
+
+  func truncateOversizedLLMCallBodiesIfNeeded() {
+    dbWriteQueue.async { [weak self] in
+      guard let self else { return }
+
+      do {
+        var totalUpdated = 0
+
+        for _ in 0..<Self.llmBodyTruncationMaxBatches {
+          let updated = try self.truncateOversizedLLMCallBodyBatch()
+          guard updated > 0 else { break }
+          totalUpdated += updated
+        }
+
+        if totalUpdated > 0 {
+          print("✅ [StorageManager] Truncated oversized LLM call bodies: \(totalUpdated) fields")
+
+          let breadcrumb = Breadcrumb(level: .info, category: "database")
+          breadcrumb.message = "Truncated oversized LLM call bodies"
+          breadcrumb.data = ["fields_updated": totalUpdated]
+          SentryHelper.addBreadcrumb(breadcrumb)
+
+          self.checkpoint(mode: .passive)
+        }
+      } catch {
+        print("⚠️ [StorageManager] Failed to truncate oversized LLM call bodies: \(error)")
+
+        let breadcrumb = Breadcrumb(level: .warning, category: "database")
+        breadcrumb.message = "Failed to truncate oversized LLM call bodies"
+        breadcrumb.data = ["error": "\(error)"]
+        SentryHelper.addBreadcrumb(breadcrumb)
+      }
+    }
+  }
+
+  private func truncateOversizedLLMCallBodyBatch() throws -> Int {
+    let limit = Self.maxStoredLLMBodyCharacters
+    let batchSize = Self.llmBodyTruncationBatchSize
+    let markerPrefix = "<truncated llm body: original_chars="
+    let markerSuffix = ", stored_prefix_chars=\(limit)>\n"
+
+    return try timedWrite("truncateOversizedLLMCallBodyBatch") { db in
+      var updated = 0
+
+      try db.execute(
+        sql: """
+              UPDATE llm_calls
+              SET request_body = ? || length(request_body) || ? || substr(request_body, 1, ?)
+              WHERE id IN (
+                SELECT id
+                FROM llm_calls
+                WHERE request_body IS NOT NULL
+                  AND length(request_body) > ?
+                  AND request_body NOT LIKE '<truncated llm body:%'
+                LIMIT ?
+              )
+          """,
+        arguments: [markerPrefix, markerSuffix, limit, limit, batchSize])
+      updated += db.changesCount
+
+      try db.execute(
+        sql: """
+              UPDATE llm_calls
+              SET response_body = ? || length(response_body) || ? || substr(response_body, 1, ?)
+              WHERE id IN (
+                SELECT id
+                FROM llm_calls
+                WHERE response_body IS NOT NULL
+                  AND length(response_body) > ?
+                  AND response_body NOT LIKE '<truncated llm body:%'
+                LIMIT ?
+              )
+          """,
+        arguments: [markerPrefix, markerSuffix, limit, limit, batchSize])
+      updated += db.changesCount
+
+      return updated
+    }
   }
 
   func purgeIfNeeded() {

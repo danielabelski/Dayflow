@@ -28,6 +28,8 @@ struct LLMHTTPInfo: Sendable {
 enum LLMLogStatus: String { case success, failure }
 
 enum LLMLogger {
+  private static let maxStoredBodyBytes = 64 * 1024
+
   // Best-effort: never throw, never block pipeline beyond DB write time
   static func logSuccess(ctx: LLMCallContext, http: LLMHTTPInfo, finishedAt: Date) {
     let latencyMs = Int(finishedAt.timeIntervalSince(ctx.startedAt) * 1000)
@@ -154,6 +156,15 @@ enum LLMLogger {
 
   private static func dataToUTF8String(_ data: Data?) -> String? {
     guard let data else { return nil }
+    guard data.count <= maxStoredBodyBytes else {
+      let prefix = data.prefix(maxStoredBodyBytes)
+      let preview = String(decoding: prefix, as: UTF8.self)
+      return """
+        <truncated llm body: original_bytes=\(data.count), stored_prefix_bytes=\(maxStoredBodyBytes)>
+        \(preview)
+        """
+    }
+
     return String(data: data, encoding: .utf8) ?? "<non-utf8 data length=\(data.count)>"
   }
 

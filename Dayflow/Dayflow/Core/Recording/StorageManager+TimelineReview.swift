@@ -93,6 +93,45 @@ extension StorageManager {
     }
   }
 
+  func hasAnyTimelineReviewRating() -> Bool {
+    (try? timedRead("hasAnyTimelineReviewRating") { db in
+      let match = try Int.fetchOne(
+        db,
+        sql: """
+              SELECT 1
+              FROM timeline_review_ratings
+              LIMIT 1
+          """)
+      return match != nil
+    }) ?? false
+  }
+
+  func hasReviewRatingInRecentTimelineDays(days: Int = 7) -> Bool {
+    guard days > 0 else { return false }
+
+    let now = Date()
+    guard let windowStart = Calendar.current.date(byAdding: .day, value: -days, to: now) else {
+      return false
+    }
+
+    let windowStartTs = Int(windowStart.timeIntervalSince1970)
+    let windowEndTs = Int(now.timeIntervalSince1970)
+
+    return
+      (try? timedRead("hasReviewRatingInRecentTimelineDays") { db in
+        let match = try Int.fetchOne(
+          db,
+          sql: """
+                SELECT 1
+                FROM timeline_review_ratings
+                WHERE end_ts > ?
+                  AND start_ts < ?
+                LIMIT 1
+            """, arguments: [windowStartTs, windowEndTs])
+        return match != nil
+      }) ?? false
+  }
+
   func fetchUnreviewedTimelineCardCount(forDay day: String, coverageThreshold: Double = 0.8) -> Int
   {
     guard let dayDate = dateFormatter.date(from: day) else { return 0 }
