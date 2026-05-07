@@ -11,47 +11,71 @@ struct AppRootView: View {
   @State private var whatsNewNote: ReleaseNote? = nil
   @State private var activeWhatsNewVersion: String? = nil
   @State private var shouldMarkWhatsNewSeen = false
+  @State private var goalFlowPresentation: DayGoalFlowPresentation? = nil
 
   var body: some View {
-    MainView()
-      .environmentObject(AppState.shared)
-      .environmentObject(categoryStore)
-      .onAppear {
-        guard whatsNewNote == nil else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-          if let note = WhatsNewConfiguration.pendingReleaseForCurrentBuild() {
-            whatsNewNote = note
-            activeWhatsNewVersion = note.version
-            shouldMarkWhatsNewSeen = true
-          }
+    ZStack {
+      MainView(goalFlowPresentation: $goalFlowPresentation)
+        .environmentObject(AppState.shared)
+        .environmentObject(categoryStore)
+
+      goalFlowOverlay
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .onAppear {
+      guard whatsNewNote == nil else { return }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        if let note = WhatsNewConfiguration.pendingReleaseForCurrentBuild() {
+          whatsNewNote = note
+          activeWhatsNewVersion = note.version
+          shouldMarkWhatsNewSeen = true
         }
       }
-      .onReceive(NotificationCenter.default.publisher(for: .showWhatsNew)) { _ in
-        guard let release = WhatsNewConfiguration.latestRelease() else { return }
-        whatsNewNote = release
-        activeWhatsNewVersion = release.version
-        shouldMarkWhatsNewSeen = release.version == currentAppVersion
+    }
+    .onReceive(NotificationCenter.default.publisher(for: .showWhatsNew)) { _ in
+      guard let release = WhatsNewConfiguration.latestRelease() else { return }
+      whatsNewNote = release
+      activeWhatsNewVersion = release.version
+      shouldMarkWhatsNewSeen = release.version == currentAppVersion
 
-        // Analytics: track manual view
-        AnalyticsService.shared.capture(
-          "whats_new_viewed_manual",
-          [
-            "version": release.version
-          ])
+      // Analytics: track manual view
+      AnalyticsService.shared.capture(
+        "whats_new_viewed_manual",
+        [
+          "version": release.version
+        ])
+    }
+    .sheet(item: $whatsNewNote, onDismiss: handleWhatsNewDismissed) { note in
+      ZStack {
+        // Backdrop
+        Color.black.opacity(0.4)
+          .ignoresSafeArea()
+
+        WhatsNewView(releaseNote: note) {
+          closeWhatsNew()
+        }
       }
-      .sheet(item: $whatsNewNote, onDismiss: handleWhatsNewDismissed) { note in
-        ZStack {
-          // Backdrop
-          Color.black.opacity(0.4)
-            .ignoresSafeArea()
+      .environment(\.colorScheme, .light)
+      .preferredColorScheme(.light)
+    }
+  }
 
-          WhatsNewView(releaseNote: note) {
-            closeWhatsNew()
+  @ViewBuilder
+  private var goalFlowOverlay: some View {
+    if let goalFlowPresentation {
+      DayGoalFlowOverlay(
+        presentation: goalFlowPresentation,
+        onDismiss: {
+          withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            self.goalFlowPresentation = nil
           }
         }
-        .environment(\.colorScheme, .light)
-        .preferredColorScheme(.light)
-      }
+      )
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .ignoresSafeArea()
+      .transition(.opacity.combined(with: .scale(scale: 0.985)))
+      .zIndex(3)
+    }
   }
 
   private func closeWhatsNew() {
