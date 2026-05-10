@@ -13,7 +13,7 @@ struct StatusMenuView: View {
   }
 
   var body: some View {
-    VStack(spacing: 7) {
+    VStack(spacing: 6) {
       // Pause/Resume section
       if controlMode == .active {
         PauseSection(onPause: pauseRecording)
@@ -24,30 +24,18 @@ struct StatusMenuView: View {
       MenuDivider()
 
       MenuRow(title: "Open Dayflow", systemImage: "macwindow", action: openDayflow)
-      MenuRow(title: "Open Recordings", systemImage: "folder", action: openRecordingsFolder)
-      MenuRow(
-        title: "Check for Updates", systemImage: "arrow.triangle.2.circlepath",
-        action: checkForUpdates)
+      MenuRow(title: "Open Recordings", action: openRecordingsFolder)
+      MenuRow(title: "Check for Updates", action: checkForUpdates)
 
       MenuDivider()
 
-      MenuRow(
-        title: "Quit Completely",
-        systemImage: "power",
-        accent: .red,
-        role: .destructive,
-        action: quitDayflow
-      )
+      MenuRow(title: "Quit Completely", systemImage: "power", accent: .red, action: quitDayflow)
     }
-    .padding(.vertical, 10)
-    .padding(.horizontal, 10)
-    .frame(width: 224)
-    .background(.thinMaterial)
-    .overlay(
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.75)
-    )
-    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    .padding(.vertical, 9)
+    .padding(.horizontal, 9)
+    .frame(minWidth: 200, maxWidth: 210)
+    .background(.regularMaterial)
+    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
   }
 
   private func pauseRecording(duration: PauseDuration) {
@@ -113,12 +101,12 @@ private struct PauseSection: View {
   let onPause: (PauseDuration) -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 7) {
+    VStack(alignment: .leading, spacing: 6) {
       // Header
       Text("Pause Dayflow")
-        .font(.system(size: 12, weight: .semibold))
+        .font(.system(size: 12, weight: .medium))
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 2)
+        .padding(.horizontal, 5)
 
       // Duration picker
       DurationPicker(onSelect: onPause)
@@ -143,6 +131,8 @@ private struct DurationPicker: View {
       ForEach(Array(options.enumerated()), id: \.offset) { index, option in
         DurationOption(
           label: option.label,
+          isFirst: index == 0,
+          isLast: index == options.count - 1,
           onTap: { onSelect(option.duration) }
         )
 
@@ -153,18 +143,19 @@ private struct DurationPicker: View {
         }
       }
     }
-    .frame(height: 34)
-    .background(Color.primary.opacity(0.075))
-    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    .background(Color.primary.opacity(0.06))
+    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
     .overlay(
-      RoundedRectangle(cornerRadius: 8, style: .continuous)
-        .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.75)
+      RoundedRectangle(cornerRadius: 6, style: .continuous)
+        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
     )
   }
 }
 
 private struct DurationOption: View {
   let label: String
+  let isFirst: Bool
+  let isLast: Bool
   let onTap: () -> Void
 
   @State private var isHovering = false
@@ -172,21 +163,19 @@ private struct DurationOption: View {
   var body: some View {
     Button(action: onTap) {
       Text(label)
-        .font(.system(size: 12, weight: .semibold))
+        .font(.system(size: 11, weight: .medium))
         .foregroundStyle(isHovering ? .white : .primary)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
         .background(
           Group {
             if isHovering {
-              RoundedRectangle(cornerRadius: 7, style: .continuous)
+              RoundedRectangle(cornerRadius: 5, style: .continuous)
                 .fill(Color.accentColor)
-                .padding(2)
             }
           }
         )
     }
-    .frame(maxWidth: .infinity)
     .buttonStyle(.plain)
     .pointingHandCursor()
     .onHover { hovering in
@@ -248,64 +237,42 @@ private struct MenuRow: View {
   let title: String
   var systemImage: String? = nil
   var accent: Color = .primary
-  var role: RowRole = .standard
   var keepsMenuOpen: Bool = false
   var action: () -> Void
 
   @State private var hovering = false
 
-  enum RowRole {
-    case standard
-    case destructive
-  }
-
   var body: some View {
     Button(action: handleTap) {
-      HStack(spacing: 8) {
+      HStack(spacing: 7) {
         if let systemImage {
           Image(systemName: systemImage)
-            .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(iconColor)
-            .frame(width: 18, height: 18)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(accent)
+            .frame(width: 17)
         } else {
           // Empty spacer to align text with rows that have icons
-          Color.clear.frame(width: 18, height: 18)
+          Color.clear.frame(width: 17)
         }
 
         Text(title)
-          .font(.system(size: 13, weight: .medium))
-          .foregroundStyle(textColor)
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(.primary)
           .lineLimit(1)
 
         Spacer(minLength: 0)
       }
-      .padding(.vertical, 6)
-      .padding(.horizontal, 7)
-      .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+      .padding(.vertical, 3.5)
+      .padding(.horizontal, 5)
+      .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
       .background(
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-          .fill(rowBackground)
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+          .fill(hovering ? Color.primary.opacity(0.08) : Color.clear)
       )
     }
     .buttonStyle(.plain)
     .pointingHandCursor()
     .onHover { hovering = $0 }
-  }
-
-  private var iconColor: Color {
-    role == .destructive ? accent : .secondary
-  }
-
-  private var textColor: Color {
-    role == .destructive ? accent : .primary
-  }
-
-  private var rowBackground: Color {
-    if hovering {
-      return role == .destructive ? Color.red.opacity(0.12) : Color.primary.opacity(0.08)
-    }
-
-    return .clear
   }
 
   private func handleTap() {
@@ -318,9 +285,9 @@ private struct MenuRow: View {
 private struct MenuDivider: View {
   var body: some View {
     Rectangle()
-      .fill(Color.primary.opacity(0.08))
-      .frame(height: 0.5)
-      .padding(.horizontal, 2)
-      .padding(.vertical, 3)
+      .fill(Color.primary.opacity(0.07))
+      .frame(height: 0.75)
+      .padding(.horizontal, 4)
+      .padding(.vertical, 2)
   }
 }
