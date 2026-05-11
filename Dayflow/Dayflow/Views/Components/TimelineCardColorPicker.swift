@@ -421,7 +421,7 @@ private struct EditableCategoryCard: View {
     VStack(alignment: .leading, spacing: 10) {
       HStack(alignment: .center, spacing: 12) {
         TextField("", text: $draftName)
-          .font(Font.custom("Nunito", size: 14).weight(.bold))
+          .font(Font.custom("Figtree", size: 14).weight(.bold))
           .textFieldStyle(.plain)
           .foregroundColor(.black)
           .submitLabel(.next)
@@ -448,14 +448,14 @@ private struct EditableCategoryCard: View {
       ZStack(alignment: .topLeading) {
         if draftDetails.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
           Text("Professional, school, or career-focused tasks (coding, design, meetings).")
-            .font(Font.custom("Nunito", size: 12).weight(.medium))
+            .font(Font.custom("Figtree", size: 12).weight(.medium))
             .foregroundColor(Color.black.opacity(0.35))
             .padding(.horizontal, 12)
             .padding(.top, 12)
         }
 
         TextEditor(text: $draftDetails)
-          .font(Font.custom("Nunito", size: 12).weight(.medium))
+          .font(Font.custom("Figtree", size: 12).weight(.medium))
           .foregroundColor(.black)
           .padding(.horizontal, 10)
           .padding(.top, 10)
@@ -486,7 +486,7 @@ private struct EditableCategoryCard: View {
     HStack(alignment: .center, spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
         Text(category.name)
-          .font(Font.custom("Nunito", size: 12).weight(.bold))
+          .font(Font.custom("Figtree", size: 12).weight(.bold))
           .foregroundColor(.black)
           .frame(maxWidth: .infinity, alignment: .center)
 
@@ -494,7 +494,7 @@ private struct EditableCategoryCard: View {
           category.details.isEmpty
             ? "Add a description to help Dayflow understand your workflow." : category.details
         )
-        .font(Font.custom("Nunito", size: 12).weight(.medium))
+        .font(Font.custom("Figtree", size: 12).weight(.medium))
         .foregroundColor(Color(red: 0.35, green: 0.35, blue: 0.35))
         .frame(maxWidth: .infinity, alignment: .center)
         .lineLimit(2)
@@ -576,14 +576,14 @@ private struct ColorAssignmentCard: View {
 
         VStack(alignment: .leading, spacing: 4) {
           Text(category.name)
-            .font(Font.custom("Nunito", size: 12).weight(.bold))
+            .font(Font.custom("Figtree", size: 12).weight(.bold))
             .foregroundColor(.black)
 
           if showDetails
             && !category.details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
           {
             Text(category.details)
-              .font(Font.custom("Nunito", size: 12).weight(.medium))
+              .font(Font.custom("Figtree", size: 12).weight(.medium))
               .foregroundColor(Color(red: 0.35, green: 0.35, blue: 0.35))
               .lineLimit(2)
           }
@@ -799,7 +799,7 @@ struct ColorOrganizerRoot: View {
       if showTitles {
         VStack(alignment: .leading, spacing: 6) {
           Text("Part 1 of 2")
-            .font(Font.custom("Nunito", size: 14).weight(.bold))
+            .font(Font.custom("Figtree", size: 14).weight(.bold))
             .foregroundColor(Color(red: 0.98, green: 0.43, blue: 0))
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -829,7 +829,7 @@ struct ColorOrganizerRoot: View {
       Text(
         "This step is optional. You can customize the categories or create new ones anytime while using Dayflow."
       )
-      .font(Font.custom("Nunito", size: 12).weight(.medium))
+      .font(Font.custom("Figtree", size: 12).weight(.medium))
       .foregroundColor(Color(red: 0.48, green: 0.48, blue: 0.48))
       .frame(maxWidth: isCompact ? .infinity : 280, alignment: .leading)
     }
@@ -842,7 +842,7 @@ struct ColorOrganizerRoot: View {
         .frame(width: 28, height: 28)
 
       Text(text)
-        .font(Font.custom("Nunito", size: 14).weight(.medium))
+        .font(Font.custom("Figtree", size: 14).weight(.medium))
         .foregroundColor(.black)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -853,7 +853,7 @@ struct ColorOrganizerRoot: View {
       if showTitles {
         VStack(alignment: .leading, spacing: 6) {
           Text("Part 2 of 2")
-            .font(Font.custom("Nunito", size: 14).weight(.bold))
+            .font(Font.custom("Figtree", size: 14).weight(.bold))
             .foregroundColor(Color(red: 0.98, green: 0.43, blue: 0))
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -897,7 +897,7 @@ struct ColorOrganizerRoot: View {
             ? "Drop on a category →"
             : "Click and drag on the canvas above to change the color palette. Then drag a color onto a category."
         )
-        .font(Font.custom("Nunito", size: 13).weight(.medium))
+        .font(Font.custom("Figtree", size: 13).weight(.medium))
         .foregroundColor(Color(red: 0.3, green: 0.3, blue: 0.3))
 
         LazyVGrid(
@@ -936,7 +936,7 @@ struct ColorOrganizerRoot: View {
           .foregroundColor(Color(red: 0.49, green: 0.33, blue: 0.16))
 
         Text("Create a new category")
-          .font(Font.custom("Nunito", size: 14).weight(.bold))
+          .font(Font.custom("Figtree", size: 14).weight(.bold))
           .foregroundColor(Color(red: 0.49, green: 0.33, blue: 0.16))
       }
       .padding(.horizontal, 14)
@@ -1013,7 +1013,7 @@ struct ColorOrganizerRoot: View {
       .frame(height: containerHeight, alignment: .topLeading)
 
       Text("This step is optional. You can change the colors anytime while using Dayflow.")
-        .font(Font.custom("Nunito", size: 12).weight(.medium))
+        .font(Font.custom("Figtree", size: 12).weight(.medium))
         .foregroundColor(Color(red: 0.48, green: 0.48, blue: 0.48))
         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -1118,7 +1118,7 @@ struct ColorOrganizerRoot: View {
 
   private var emptyState: some View {
     Text("Add a category to get started.")
-      .font(Font.custom("Nunito", size: 13).weight(.medium))
+      .font(Font.custom("Figtree", size: 13).weight(.medium))
       .foregroundColor(Color(red: 0.35, green: 0.35, blue: 0.35))
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding()
@@ -1156,7 +1156,7 @@ struct ColorOrganizerRoot: View {
     var body: some View {
       Button(action: isEnabled ? action : {}) {
         Text(title)
-          .font(Font.custom("Nunito", size: 16).weight(.semibold))
+          .font(Font.custom("Figtree", size: 16).weight(.semibold))
           .foregroundColor(Color(red: 0.26, green: 0.26, blue: 0.26))
           .padding(.horizontal, 59)
           .padding(.vertical, 18)

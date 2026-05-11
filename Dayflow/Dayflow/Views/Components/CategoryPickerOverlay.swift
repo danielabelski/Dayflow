@@ -86,7 +86,7 @@ struct CategoryPickerOverlay: View {
   }
 
   private var helperContent: some View {
-    let baseFont = Font.custom("Nunito", size: 12)
+    let baseFont = Font.custom("Figtree", size: 12)
     let baseColor = Color(red: 0.39, green: 0.35, blue: 0.33)
     let linkColor = Color(red: 1.0, green: 0.4, blue: 0.0)
     let linkURL = URL(string: "dayflow://category-editor")!
@@ -171,7 +171,7 @@ private struct CategoryPickerPill: View {
 
       Text(category.name)
         .font(
-          Font.custom("Nunito", size: 13)
+          Font.custom("Figtree", size: 13)
             .weight(.medium)
         )
         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.2))
