@@ -150,7 +150,7 @@ struct CategoryDonutChart: View {
   private var centerContent: some View {
     VStack(spacing: 4) {
       Text("TOTAL")
-        .font(.custom("Nunito", size: 8).weight(.bold))
+        .font(.custom("Figtree", size: 8).weight(.bold))
         .foregroundColor(Color(red: 0.65, green: 0.65, blue: 0.65))  // #a5a5a5
 
       VStack(spacing: 0) {
@@ -192,7 +192,7 @@ struct CategoryDonutChart: View {
 
         // Category name
         Text(item.name)
-          .font(.custom("NunitoSans-Regular", size: 10))
+          .font(.custom("FigtreeSans-Regular", size: 10))
           .foregroundColor(Color(red: 0.39, green: 0.39, blue: 0.39))  // #636363
           .lineLimit(1)
           .truncationMode(.tail)
@@ -201,7 +201,7 @@ struct CategoryDonutChart: View {
 
       // Duration
       Text(item.formattedDuration)
-        .font(.custom("NunitoSans-SemiBold", size: 12))
+        .font(.custom("FigtreeSans-SemiBold", size: 12))
         .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.2))  // #333333
         .padding(.leading, 14)  // Align with text above
     }

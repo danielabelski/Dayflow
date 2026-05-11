@@ -50,8 +50,8 @@ struct DistractionSummaryCard: View {
 
     static let labelFont = Font.custom("InstrumentSerif-Regular", size: 14)
     static let valueFont = Font.custom("InstrumentSerif-Regular", size: 20)
-    static let patternTitleFont = Font.custom("Nunito", size: 12).weight(.bold)
-    static let patternBodyFont = Font.custom("Nunito", size: 12)
+    static let patternTitleFont = Font.custom("Figtree", size: 12).weight(.bold)
+    static let patternBodyFont = Font.custom("Figtree", size: 12)
   }
 
   var body: some View {

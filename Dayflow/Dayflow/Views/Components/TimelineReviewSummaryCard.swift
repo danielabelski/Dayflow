@@ -93,7 +93,7 @@ struct TimelineReviewSummaryCard: View {
         .foregroundColor(Design.titleColor)
 
       subtitle
-        .font(.custom("Nunito", size: 11))
+        .font(.custom("Figtree", size: 11))
         .lineSpacing(2)
         .onTapGesture {
           guard cardsToReviewCount > 0 else { return }
@@ -175,13 +175,13 @@ struct TimelineReviewSummaryCard: View {
               )
 
             Text(metric.label)
-              .font(.custom("Nunito", size: 10))
+              .font(.custom("Figtree", size: 10))
               .foregroundColor(Design.subtitleColor)
           }
 
           if summary.hasData {
             Text(metric.durationText)
-              .font(.custom("Nunito", size: 12).weight(.semibold))
+              .font(.custom("Figtree", size: 12).weight(.semibold))
               .foregroundColor(Design.titleColor)
               .padding(.leading, 14)
           }

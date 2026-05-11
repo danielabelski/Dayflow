@@ -17,7 +17,7 @@ struct CardsToReviewBadge: View {
 
       // Label text
       Text(count == 1 ? "card to review" : "cards to review")
-        .font(.custom("Nunito", size: 10).weight(.medium))
+        .font(.custom("Figtree", size: 10).weight(.medium))
         .foregroundColor(.white)
     }
     .padding(.horizontal, 12)
@@ -64,7 +64,7 @@ struct CardsToReviewBadge: View {
       )
       .overlay(
         Text("\(count)")
-          .font(.custom("Nunito", size: 9).weight(.heavy))
+          .font(.custom("Figtree", size: 9).weight(.heavy))
           .foregroundColor(Color(red: 0.98, green: 0.6, blue: 0.49))
       )
       .offset(x: 4, y: 0)

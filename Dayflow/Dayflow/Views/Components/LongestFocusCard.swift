@@ -220,7 +220,7 @@ struct LongestFocusCard: View {
   private func timeLabels(for block: FocusBlock) -> some View {
     ZStack {
       Text(cachedFocusTimeFormatter.string(from: block.startTime))
-        .font(.custom("Nunito-Bold", size: 10))
+        .font(.custom("Figtree-Bold", size: 10))
         .foregroundColor(Design.orangeSolid)
         .position(
           x: Design.labelStartCenterX,
@@ -228,7 +228,7 @@ struct LongestFocusCard: View {
         )
 
       Text(cachedFocusTimeFormatter.string(from: block.endTime))
-        .font(.custom("Nunito-Bold", size: 10))
+        .font(.custom("Figtree-Bold", size: 10))
         .foregroundColor(Design.orangeSolid)
         .position(
           x: Design.labelEndCenterX,
