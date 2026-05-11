@@ -85,22 +85,22 @@ struct ToolCallBubble: View {
     switch message.toolStatus {
     case .running:
       Text(message.content)
-        .font(.custom("Nunito", size: 12).weight(.semibold))
+        .font(.custom("Figtree", size: 12).weight(.semibold))
         .foregroundColor(Color(hex: "8B5E3C"))
 
     case .completed(let summary):
       Text(summary)
-        .font(.custom("Nunito", size: 12).weight(.semibold))
+        .font(.custom("Figtree", size: 12).weight(.semibold))
         .foregroundColor(Color(hex: "2D7D46"))
 
     case .failed(let error):
       Text(error)
-        .font(.custom("Nunito", size: 12).weight(.semibold))
+        .font(.custom("Figtree", size: 12).weight(.semibold))
         .foregroundColor(Color(hex: "C62828"))
 
     case nil:
       Text(message.content)
-        .font(.custom("Nunito", size: 12).weight(.semibold))
+        .font(.custom("Figtree", size: 12).weight(.semibold))
         .foregroundColor(Color(hex: "8B5E3C"))
     }
   }

@@ -128,7 +128,7 @@ struct FlexibleProviderCard: View {
     HStack {
       Spacer()
       Text(title)
-        .font(.custom("Nunito", size: 18))
+        .font(.custom("Figtree", size: 18))
         .fontWeight(.semibold)
         .foregroundColor(.black.opacity(0.9))
         .lineLimit(2)
@@ -156,7 +156,7 @@ struct FlexibleProviderCard: View {
             .font(.system(size: 12))
             .foregroundColor(.green)
           Text(customStatusText ?? "Currently selected")
-            .font(.custom("Nunito", size: 12))
+            .font(.custom("Figtree", size: 12))
             .fontWeight(.medium)
             .foregroundColor(.black.opacity(0.6))
         }
@@ -185,7 +185,7 @@ struct FlexibleProviderCard: View {
       action: buttonAction,
       content: {
         Text(buttonTitle)
-          .font(.custom("Nunito", size: 14))
+          .font(.custom("Figtree", size: 14))
           .fontWeight(.semibold)
           .foregroundColor(buttonForegroundColor)
           .frame(maxWidth: .infinity)
@@ -291,7 +291,7 @@ struct BadgeView: View {
   var body: some View {
     HStack(spacing: 4 * scale) {
       Text(text)
-        .font(Font.custom("Nunito", size: 10 * scale * fontScale).weight(textWeight))
+        .font(Font.custom("Figtree", size: 10 * scale * fontScale).weight(textWeight))
         .kerning(kerningValue * scale * fontScale)
         .foregroundColor(textColor)
     }
@@ -527,7 +527,7 @@ struct FeatureRowView: View {
         .frame(width: 16 * scale)
 
       Text(feature.text)
-        .font(.custom("Nunito", size: 14 * scale * fontScale))
+        .font(.custom("Figtree", size: 14 * scale * fontScale))
         .foregroundColor(.black.opacity(0.75))
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -42,7 +42,7 @@ struct ReferralSurveyView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Text(prompt)
-        .font(.custom("Nunito", size: 15).weight(.semibold))
+        .font(.custom("Figtree", size: 15).weight(.semibold))
         .foregroundColor(.black.opacity(0.85))
         .fixedSize(horizontal: false, vertical: true)
 
@@ -64,7 +64,7 @@ struct ReferralSurveyView: View {
 
       if showsThankYou && hasSubmitted {
         Label("Thanks for letting me know!", systemImage: "checkmark.circle.fill")
-          .font(.custom("Nunito", size: 14))
+          .font(.custom("Figtree", size: 14))
           .foregroundColor(Color(red: 0.25, green: 0.17, blue: 0))
           .padding(.top, 4)
       }
@@ -76,7 +76,7 @@ struct ReferralSurveyView: View {
             action: handleSubmit,
             content: {
               Text(submitLabel)
-                .font(.custom("Nunito", size: 16))
+                .font(.custom("Figtree", size: 16))
                 .fontWeight(.semibold)
             },
             background: submitBackground,
@@ -133,7 +133,7 @@ struct ReferralSurveyView: View {
             .foregroundColor(Color(red: 0.25, green: 0.17, blue: 0))
 
           Text(option.displayName)
-            .font(.custom("Nunito", size: 14))
+            .font(.custom("Figtree", size: 14))
             .foregroundColor(.black.opacity(0.78))
 
           Spacer(minLength: 0)
@@ -169,7 +169,7 @@ struct ReferralSurveyView: View {
   private var detailField: some View {
     TextField(currentDetailPlaceholder, text: $customReferral)
       .textFieldStyle(RoundedBorderTextFieldStyle())
-      .font(.custom("Nunito", size: 13))
+      .font(.custom("Figtree", size: 13))
       .opacity(selectedReferral?.requiresDetail == true ? 1 : 0)
       .disabled(selectedReferral?.requiresDetail != true)
       .allowsHitTesting(selectedReferral?.requiresDetail == true)

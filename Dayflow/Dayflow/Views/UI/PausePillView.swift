@@ -64,7 +64,7 @@ struct PausePillView: View {
   }
 
   private var pillLabelFont: Font {
-    .custom("Nunito-Medium", size: 12)
+    .custom("Figtree-Medium", size: 12)
   }
 
   private var statusSpacing: CGFloat { 10 }

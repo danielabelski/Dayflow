@@ -56,7 +56,7 @@ struct DayflowButton: View {
       }
     }) {
       Text(title)
-        .font(.custom("Nunito", size: fontSize))
+        .font(.custom("Figtree", size: fontSize))
         .fontWeight(.semibold)
         .foregroundColor(isSubtle ? .black.opacity(0.7) : .white)
         .frame(width: width, height: 56, alignment: .center)
