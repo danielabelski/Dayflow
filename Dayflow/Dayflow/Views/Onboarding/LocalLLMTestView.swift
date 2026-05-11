@@ -100,7 +100,7 @@ struct LocalLLMTestView: View {
       if showInputs {
         VStack(alignment: .leading, spacing: 6) {
           Text("Base URL")
-            .font(.custom("Nunito", size: 12))
+            .font(.custom("Figtree", size: 12))
             .fontWeight(.semibold)
             .foregroundColor(SettingsStyle.secondary)
           TextField(basePlaceholder ?? engine.defaultBaseURL, text: $baseURL)
@@ -109,7 +109,7 @@ struct LocalLLMTestView: View {
 
         VStack(alignment: .leading, spacing: 6) {
           Text("Model ID")
-            .font(.custom("Nunito", size: 12))
+            .font(.custom("Figtree", size: 12))
             .fontWeight(.semibold)
             .foregroundColor(SettingsStyle.secondary)
           TextField(
@@ -121,7 +121,7 @@ struct LocalLLMTestView: View {
         if engine == .custom {
           VStack(alignment: .leading, spacing: 6) {
             Text("API key (optional)")
-              .font(.custom("Nunito", size: 12))
+              .font(.custom("Figtree", size: 12))
               .fontWeight(.semibold)
               .foregroundColor(SettingsStyle.secondary)
             SecureField("sk-live-...", text: $apiKey)
@@ -130,7 +130,7 @@ struct LocalLLMTestView: View {
             Text(
               "Stored locally in UserDefaults and sent as a Bearer token for custom endpoints (LiteLLM, OpenRouter, etc.)"
             )
-            .font(.custom("Nunito", size: 11))
+            .font(.custom("Figtree", size: 11))
             .foregroundColor(SettingsStyle.meta)
           }
         }
@@ -151,7 +151,7 @@ struct LocalLLMTestView: View {
           Text(
             "If you get stuck here, you can go back and choose the ‘Bring your own key’ option — it only takes a minute to set up."
           )
-          .font(.custom("Nunito", size: 12))
+          .font(.custom("Figtree", size: 12))
           .foregroundColor(SettingsStyle.secondary)
           .fixedSize(horizontal: false, vertical: true)
         }

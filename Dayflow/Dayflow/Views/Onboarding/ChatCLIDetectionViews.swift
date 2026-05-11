@@ -77,7 +77,7 @@ struct ChatCLIDetectionStepView<NextButton: View>: View {
       Text(
         "Dayflow can talk to ChatGPT (via the Codex CLI) or Claude Code. You only need one installed and signed in on this Mac. After installing, run `codex auth` or `claude login` in Terminal to connect it to your account."
       )
-      .font(.custom("Nunito", size: 14))
+      .font(.custom("Figtree", size: 14))
       .foregroundColor(.black.opacity(0.6))
 
       HStack(alignment: .top, spacing: 14) {
@@ -96,12 +96,12 @@ struct ChatCLIDetectionStepView<NextButton: View>: View {
       Text(
         "Tip: Once both are installed, you can choose which provider Dayflow uses from Settings → AI Provider."
       )
-      .font(.custom("Nunito", size: 12))
+      .font(.custom("Figtree", size: 12))
       .foregroundColor(.black.opacity(0.5))
 
       VStack(alignment: .leading, spacing: 10) {
         Text("Choose which provider Dayflow should use")
-          .font(.custom("Nunito", size: 13))
+          .font(.custom("Figtree", size: 13))
           .fontWeight(.semibold)
           .foregroundColor(.black.opacity(0.65))
         HStack(spacing: 12) {
@@ -133,7 +133,7 @@ struct ChatCLIDetectionStepView<NextButton: View>: View {
                 Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .semibold))
               }
               Text(isChecking ? "Checking…" : "Re-check")
-                .font(.custom("Nunito", size: 14))
+                .font(.custom("Figtree", size: 14))
                 .fontWeight(.semibold)
             }
           },
@@ -186,11 +186,11 @@ struct ChatCLIDetectionStepView<NextButton: View>: View {
           .foregroundColor(enabled ? accentColor : Color.gray.opacity(0.6))
         VStack(alignment: .leading, spacing: 2) {
           Text(tool.shortName)
-            .font(.custom("Nunito", size: 13))
+            .font(.custom("Figtree", size: 13))
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(enabled ? 0.85 : 0.4))
           Text(enabled ? "Ready to use" : "Install to enable")
-            .font(.custom("Nunito", size: 11))
+            .font(.custom("Figtree", size: 11))
             .foregroundColor(.black.opacity(enabled ? 0.5 : 0.35))
         }
       }
@@ -232,7 +232,7 @@ struct ChatCLIToolStatusRow: View {
           .frame(width: 30, height: 30)
 
         Text(tool.shortName)
-          .font(.custom("Nunito", size: 15))
+          .font(.custom("Figtree", size: 15))
           .fontWeight(.semibold)
           .foregroundColor(.black.opacity(0.9))
 
@@ -249,7 +249,7 @@ struct ChatCLIToolStatusRow: View {
             HStack(spacing: 6) {
               Image(systemName: "arrow.down.circle.fill").font(.system(size: 11, weight: .semibold))
               Text(installLabel)
-                .font(.custom("Nunito", size: 12))
+                .font(.custom("Figtree", size: 12))
                 .fontWeight(.semibold)
             }
           },
@@ -280,7 +280,7 @@ struct ChatCLIToolStatusRow: View {
       HStack(spacing: 5) {
         ProgressView().scaleEffect(0.5)
         Text(status.statusLabel)
-          .font(.custom("Nunito", size: 11))
+          .font(.custom("Figtree", size: 11))
           .foregroundColor(accentColor)
       }
       .padding(.horizontal, 10)
@@ -289,7 +289,7 @@ struct ChatCLIToolStatusRow: View {
       .cornerRadius(999)
     case .installed:
       Text(status.statusLabel)
-        .font(.custom("Nunito", size: 11))
+        .font(.custom("Figtree", size: 11))
         .fontWeight(.semibold)
         .foregroundColor(Color(red: 0.13, green: 0.7, blue: 0.23))
         .padding(.horizontal, 10)
@@ -298,7 +298,7 @@ struct ChatCLIToolStatusRow: View {
         .cornerRadius(999)
     case .notFound:
       Text(status.statusLabel)
-        .font(.custom("Nunito", size: 11))
+        .font(.custom("Figtree", size: 11))
         .fontWeight(.semibold)
         .foregroundColor(Color(hex: "E91515"))
         .padding(.horizontal, 10)
@@ -307,7 +307,7 @@ struct ChatCLIToolStatusRow: View {
         .cornerRadius(999)
     case .failed:
       Text(status.statusLabel)
-        .font(.custom("Nunito", size: 11))
+        .font(.custom("Figtree", size: 11))
         .fontWeight(.semibold)
         .foregroundColor(Color(red: 0.91, green: 0.34, blue: 0.16))
         .padding(.horizontal, 10)

@@ -42,7 +42,7 @@ struct LLMProviderSetupView: View {
                 .frame(width: 20, alignment: .center)
 
               Text("Back")
-                .font(.custom("Nunito", size: 15))
+                .font(.custom("Figtree", size: 15))
                 .fontWeight(.medium)
                 .foregroundColor(.black.opacity(0.7))
             }
@@ -59,7 +59,7 @@ struct LLMProviderSetupView: View {
         // Title in the content area
         HStack {
           Text(headerTitle)
-            .font(.custom("Nunito", size: 32))
+            .font(.custom("Figtree", size: 32))
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(0.9))
 
@@ -126,7 +126,7 @@ struct LLMProviderSetupView: View {
         content: {
           HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill").font(.system(size: 14))
-            Text("Complete Setup").font(.custom("Nunito", size: 14)).fontWeight(.semibold)
+            Text("Complete Setup").font(.custom("Figtree", size: 14)).fontWeight(.semibold)
           }
         },
         background: Color(red: 0.25, green: 0.17, blue: 0),
@@ -142,7 +142,7 @@ struct LLMProviderSetupView: View {
         action: handleContinue,
         content: {
           HStack(spacing: 6) {
-            Text(nextButtonText).font(.custom("Nunito", size: 14)).fontWeight(.semibold)
+            Text(nextButtonText).font(.custom("Figtree", size: 14)).fontWeight(.semibold)
             if nextButtonText == "Next" {
               Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium))
             }
@@ -170,13 +170,13 @@ struct LLMProviderSetupView: View {
       VStack(alignment: .leading, spacing: 20) {
         VStack(alignment: .leading, spacing: 8) {
           Text("Choose your local AI engine")
-            .font(.custom("Nunito", size: 24))
+            .font(.custom("Figtree", size: 24))
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(0.9))
           Text(
             "For local use, LM Studio is the most reliable; Ollama has a known thinking bug in onboarding (can't turn thinking off) and performance is unreliable."
           )
-          .font(.custom("Nunito", size: 14))
+          .font(.custom("Figtree", size: 14))
           .foregroundColor(.black.opacity(0.6))
         }
         HStack(alignment: .center, spacing: 12) {
@@ -203,7 +203,7 @@ struct LLMProviderSetupView: View {
               }
               .frame(width: 18, height: 18)
               Text("Download LM Studio")
-                .font(.custom("Nunito", size: 14))
+                .font(.custom("Figtree", size: 14))
                 .fontWeight(.semibold)
             },
             background: Color(red: 0.25, green: 0.17, blue: 0),
@@ -216,7 +216,7 @@ struct LLMProviderSetupView: View {
         Text(
           "Already have a local server? Make sure it’s OpenAI-compatible. You can set a custom base URL in the next step."
         )
-        .font(.custom("Nunito", size: 13))
+        .font(.custom("Figtree", size: 13))
         .foregroundColor(.black.opacity(0.6))
         HStack {
           Spacer()
@@ -226,12 +226,12 @@ struct LLMProviderSetupView: View {
     case .localModelInstall:
       VStack(alignment: .leading, spacing: 16) {
         Text("Install Qwen3-VL 4B")
-          .font(.custom("Nunito", size: 24))
+          .font(.custom("Figtree", size: 24))
           .fontWeight(.semibold)
           .foregroundColor(.black.opacity(0.9))
         if setupState.localEngine == .ollama {
           Text("After installing Ollama, run this in your terminal to download the model (≈5GB):")
-            .font(.custom("Nunito", size: 14))
+            .font(.custom("Figtree", size: 14))
             .foregroundColor(.black.opacity(0.6))
           TerminalCommandView(
             title: "Run this command:",
@@ -241,7 +241,7 @@ struct LLMProviderSetupView: View {
         } else if setupState.localEngine == .lmstudio {
           VStack(alignment: .leading, spacing: 16) {
             Text("After installing LM Studio, download the recommended model:")
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.6))
 
             DayflowSurfaceButton(
@@ -249,7 +249,7 @@ struct LLMProviderSetupView: View {
               content: {
                 HStack(spacing: 8) {
                   Image(systemName: "arrow.down.circle.fill").font(.system(size: 14))
-                  Text("Download Qwen3-VL 4B in LM Studio").font(.custom("Nunito", size: 14))
+                  Text("Download Qwen3-VL 4B in LM Studio").font(.custom("Figtree", size: 14))
                     .fontWeight(.semibold)
                 }
               },
@@ -264,13 +264,13 @@ struct LLMProviderSetupView: View {
 
             VStack(alignment: .leading, spacing: 6) {
               Text("This will open LM Studio and prompt you to download the model (≈3GB).")
-                .font(.custom("Nunito", size: 13))
+                .font(.custom("Figtree", size: 13))
                 .foregroundColor(.black.opacity(0.65))
 
               Text(
                 "Once downloaded, turn on 'Local Server' in LM Studio (default http://localhost:1234)"
               )
-              .font(.custom("Nunito", size: 13))
+              .font(.custom("Figtree", size: 13))
               .foregroundColor(.black.opacity(0.65))
             }
             .padding(.top, 4)
@@ -278,14 +278,14 @@ struct LLMProviderSetupView: View {
             // Fallback manual instructions
             VStack(alignment: .leading, spacing: 4) {
               Text("Manual setup:")
-                .font(.custom("Nunito", size: 12))
+                .font(.custom("Figtree", size: 12))
                 .fontWeight(.semibold)
                 .foregroundColor(.black.opacity(0.5))
               Text("1. Open LM Studio → Models tab")
-                .font(.custom("Nunito", size: 12))
+                .font(.custom("Figtree", size: 12))
                 .foregroundColor(.black.opacity(0.45))
               Text("2. Search for 'Qwen3-VL-4B' and install the Instruct variant")
-                .font(.custom("Nunito", size: 12))
+                .font(.custom("Figtree", size: 12))
                 .foregroundColor(.black.opacity(0.45))
             }
             .padding(.top, 8)
@@ -293,13 +293,13 @@ struct LLMProviderSetupView: View {
         } else {
           VStack(alignment: .leading, spacing: 8) {
             Text("Use any OpenAI-compatible VLM")
-              .font(.custom("Nunito", size: 16))
+              .font(.custom("Figtree", size: 16))
               .fontWeight(.semibold)
               .foregroundColor(.black.opacity(0.85))
             Text(
               "Make sure your server exposes the OpenAI Chat Completions API and has Qwen3-VL 4B (or Qwen2.5-VL 3B if you need the legacy model) installed."
             )
-            .font(.custom("Nunito", size: 14))
+            .font(.custom("Figtree", size: 14))
             .foregroundColor(.black.opacity(0.75))
           }
         }
@@ -345,7 +345,7 @@ struct LLMProviderSetupView: View {
               .foregroundColor(Color(hex: "E91515"))
 
             Text(message)
-              .font(.custom("Nunito", size: 13))
+              .font(.custom("Figtree", size: 13))
               .foregroundColor(Color(hex: "E91515"))
           }
           .padding(.horizontal, 16)
@@ -364,7 +364,7 @@ struct LLMProviderSetupView: View {
           Text(
             "Choose your Gemini model. We recommend 3.1 Flash-Lite Preview for the best speed/cost balance, with 3 Flash and 2.5 Flash available as fallbacks."
           )
-          .font(.custom("Nunito", size: 16))
+          .font(.custom("Figtree", size: 16))
           .fontWeight(.semibold)
           .foregroundColor(.black.opacity(0.85))
 
@@ -376,7 +376,7 @@ struct LLMProviderSetupView: View {
           .pickerStyle(.segmented)
 
           Text(GeminiModelPreference(primary: setupState.geminiModel).fallbackSummary)
-            .font(.custom("Nunito", size: 13))
+            .font(.custom("Figtree", size: 13))
             .foregroundColor(.black.opacity(0.55))
         }
         .onChange(of: setupState.geminiModel) {
@@ -393,12 +393,12 @@ struct LLMProviderSetupView: View {
       VStack(alignment: .leading, spacing: 24) {
         VStack(alignment: .leading, spacing: 8) {
           Text("Download the AI model")
-            .font(.custom("Nunito", size: 24))
+            .font(.custom("Figtree", size: 24))
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(0.9))
 
           Text("This model enables Dayflow to understand what's on your screen")
-            .font(.custom("Nunito", size: 14))
+            .font(.custom("Figtree", size: 14))
             .foregroundColor(.black.opacity(0.6))
         }
 
@@ -419,12 +419,12 @@ struct LLMProviderSetupView: View {
       VStack(alignment: .leading, spacing: 24) {
         VStack(alignment: .leading, spacing: 16) {
           Text(title)
-            .font(.custom("Nunito", size: 24))
+            .font(.custom("Figtree", size: 24))
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(0.9))
           if !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             Text(description)
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.6))
               .fixedSize(horizontal: false, vertical: true)
               .multilineTextAlignment(.leading)
@@ -435,7 +435,7 @@ struct LLMProviderSetupView: View {
                 + Text(
                   " LLM, but we strongly recommend using Qwen3-VL 4B based on our internal benchmarks."
                 ))
-                .font(.custom("Nunito", size: 14))
+                .font(.custom("Figtree", size: 14))
                 .foregroundColor(.black.opacity(0.6))
                 .fixedSize(horizontal: false, vertical: true)
                 .multilineTextAlignment(.leading)
@@ -466,7 +466,7 @@ struct LLMProviderSetupView: View {
                 // Engine selection: LM Studio or Custom
                 VStack(alignment: .leading, spacing: 12) {
                   Text("Which tool are you using?")
-                    .font(.custom("Nunito", size: 14))
+                    .font(.custom("Figtree", size: 14))
                     .foregroundColor(.black.opacity(0.65))
                   Picker("Engine", selection: $setupState.localEngine) {
                     Text("LM Studio").tag(LocalEngine.lmstudio)
@@ -525,30 +525,30 @@ struct LLMProviderSetupView: View {
       VStack(alignment: .leading, spacing: 24) {
         VStack(alignment: .leading, spacing: 8) {
           Text("Get your Gemini API key")
-            .font(.custom("Nunito", size: 24))
+            .font(.custom("Figtree", size: 24))
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(0.9))
 
           Text(
             "allows you to run Dayflow for free. All you need is a Google account - no credit card required."
           )
-          .font(.custom("Nunito", size: 14))
+          .font(.custom("Figtree", size: 14))
           .foregroundColor(.black.opacity(0.6))
         }
 
         VStack(alignment: .leading, spacing: 16) {
           HStack(alignment: .top, spacing: 12) {
             Text("1.")
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.6))
               .frame(width: 20, alignment: .leading)
 
             Group {
               Text("Visit Google AI Studio ")
-                .font(.custom("Nunito", size: 14))
+                .font(.custom("Figtree", size: 14))
                 .foregroundColor(.black.opacity(0.8))
                 + Text("(aistudio.google.com)")
-                .font(.custom("Nunito", size: 14))
+                .font(.custom("Figtree", size: 14))
                 .foregroundColor(Color(red: 1, green: 0.42, blue: 0.02))
                 .underline()
             }
@@ -558,23 +558,23 @@ struct LLMProviderSetupView: View {
 
           HStack(alignment: .top, spacing: 12) {
             Text("2.")
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.6))
               .frame(width: 20, alignment: .leading)
 
             Text("Click \"Get API key\" in the top right")
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.8))
           }
 
           HStack(alignment: .top, spacing: 12) {
             Text("3.")
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.6))
               .frame(width: 20, alignment: .leading)
 
             Text("Create a new API key and copy it")
-              .font(.custom("Nunito", size: 14))
+              .font(.custom("Figtree", size: 14))
               .foregroundColor(.black.opacity(0.8))
           }
         }
@@ -587,7 +587,7 @@ struct LLMProviderSetupView: View {
             content: {
               HStack(spacing: 8) {
                 Image(systemName: "safari").font(.system(size: 14))
-                Text("Open Google AI Studio").font(.custom("Nunito", size: 14)).fontWeight(
+                Text("Open Google AI Studio").font(.custom("Figtree", size: 14)).fontWeight(
                   .semibold)
               }
             },

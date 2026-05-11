@@ -17,12 +17,12 @@ struct TerminalCommandView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text(title)
-        .font(.custom("Nunito", size: 16))
+        .font(.custom("Figtree", size: 16))
         .fontWeight(.semibold)
         .foregroundColor(.black.opacity(0.9))
 
       Text(subtitle)
-        .font(.custom("Nunito", size: 14))
+        .font(.custom("Figtree", size: 14))
         .foregroundColor(.black.opacity(0.6))
 
       // Command block with trailing copy button (overlay for tight right alignment)
@@ -45,7 +45,7 @@ struct TerminalCommandView: View {
               Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 12, weight: .medium))
               Text(isCopied ? "Copied" : "Copy")
-                .font(.custom("Nunito", size: 13))
+                .font(.custom("Figtree", size: 13))
                 .fontWeight(.medium)
             }
             .foregroundColor(

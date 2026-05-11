@@ -17,7 +17,7 @@ struct ChatCLITestView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
       Text("We'll ask your CLI a simple question to verify it's working and signed in.")
-        .font(.custom("Nunito", size: 12))
+        .font(.custom("Figtree", size: 12))
         .foregroundColor(SettingsStyle.secondary)
         .fixedSize(horizontal: false, vertical: true)
 
@@ -31,7 +31,7 @@ struct ChatCLITestView: View {
 
       if selectedTool == nil {
         Text("Select ChatGPT or Claude above before running the test.")
-          .font(.custom("Nunito", size: 12))
+          .font(.custom("Figtree", size: 12))
           .foregroundColor(SettingsStyle.secondary)
       }
 
