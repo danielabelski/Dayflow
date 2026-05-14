@@ -2,12 +2,84 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum DayGoalFlowInitialScreen {
+  case review
+  case setup
+}
+
+struct DayGoalSetupReferenceStats: Equatable, Sendable {
+  enum Period: Sendable {
+    case yesterday
+    case lastWeekAverage
+  }
+
+  var yesterdayByCategoryID: [String: TimeInterval]
+  var yesterdayByCategoryName: [String: TimeInterval]
+  var lastWeekAverageByCategoryID: [String: TimeInterval]
+  var lastWeekAverageByCategoryName: [String: TimeInterval]
+
+  static let empty = DayGoalSetupReferenceStats(
+    yesterdayByCategoryID: [:],
+    yesterdayByCategoryName: [:],
+    lastWeekAverageByCategoryID: [:],
+    lastWeekAverageByCategoryName: [:]
+  )
+
+  func minutes(for snapshots: [DayGoalCategorySnapshot], period: Period) -> Int {
+    let duration: TimeInterval
+    switch period {
+    case .yesterday:
+      duration = totalDuration(
+        for: snapshots,
+        byID: yesterdayByCategoryID,
+        byName: yesterdayByCategoryName
+      )
+    case .lastWeekAverage:
+      duration = totalDuration(
+        for: snapshots,
+        byID: lastWeekAverageByCategoryID,
+        byName: lastWeekAverageByCategoryName
+      )
+    }
+    return max(0, Int(duration / 60))
+  }
+
+  private func totalDuration(
+    for snapshots: [DayGoalCategorySnapshot],
+    byID: [String: TimeInterval],
+    byName: [String: TimeInterval]
+  ) -> TimeInterval {
+    snapshots.reduce(0) { total, snapshot in
+      let duration =
+        byID[snapshot.categoryID]
+        ?? byName[Self.normalized(snapshot.name), default: 0]
+      return total + duration
+    }
+  }
+
+  private static func normalized(_ name: String) -> String {
+    name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+  }
+}
+
 struct DayGoalFlowPresentation: Identifiable {
   let id = UUID()
   let review: DayGoalReviewSnapshot
   let plan: DayGoalPlan
   let categories: [TimelineCategory]
+  let setupReferenceStats: DayGoalSetupReferenceStats
+  let initialScreen: DayGoalFlowInitialScreen
+  var onSkip: () -> Void
   var onConfirm: (DayGoalPlan) -> Void
+}
+
+private struct GoalSetupStatPair {
+  let yesterdayMinutes: Int
+  let lastWeekAverageMinutes: Int
+
+  var scaleMaxMinutes: Int {
+    max(yesterdayMinutes, lastWeekAverageMinutes)
+  }
 }
 
 struct DayGoalFlowOverlay: View {
@@ -24,7 +96,12 @@ struct DayGoalFlowOverlay: View {
           review: presentation.review,
           plan: presentation.plan,
           categories: presentation.categories,
-          onCancel: onDismiss,
+          setupReferenceStats: presentation.setupReferenceStats,
+          initialScreen: presentation.initialScreen,
+          onSkip: {
+            presentation.onSkip()
+            onDismiss()
+          },
           onConfirm: { plan in
             presentation.onConfirm(plan)
             onDismiss()
@@ -41,32 +118,30 @@ struct DayGoalFlowOverlay: View {
 }
 
 struct DayGoalFlowView: View {
-  enum InitialScreen {
-    case review
-    case setup
-  }
-
   let review: DayGoalReviewSnapshot
   let categories: [TimelineCategory]
-  let initialScreen: InitialScreen
-  var onCancel: () -> Void
+  let setupReferenceStats: DayGoalSetupReferenceStats
+  let initialScreen: DayGoalFlowInitialScreen
+  var onSkip: () -> Void
   var onConfirm: (DayGoalPlan) -> Void
 
-  @State private var screen: InitialScreen
+  @State private var screen: DayGoalFlowInitialScreen
   @State private var draft: DayGoalPlan
 
   init(
     review: DayGoalReviewSnapshot,
     plan: DayGoalPlan,
     categories: [TimelineCategory],
-    initialScreen: InitialScreen = .review,
-    onCancel: @escaping () -> Void,
+    setupReferenceStats: DayGoalSetupReferenceStats = .empty,
+    initialScreen: DayGoalFlowInitialScreen = .review,
+    onSkip: @escaping () -> Void,
     onConfirm: @escaping (DayGoalPlan) -> Void
   ) {
     self.review = review
     self.categories = categories
+    self.setupReferenceStats = setupReferenceStats
     self.initialScreen = initialScreen
-    self.onCancel = onCancel
+    self.onSkip = onSkip
     self.onConfirm = onConfirm
     _screen = State(initialValue: initialScreen)
     _draft = State(initialValue: plan)
@@ -116,7 +191,7 @@ struct DayGoalFlowView: View {
   private var reviewScreen: some View {
     ZStack(alignment: .topLeading) {
       Text("Yesterday’s review")
-        .font(.custom("InstrumentSerif-Regular", size: 36))
+        .font(.custom("Instrument Serif", size: 36))
         .foregroundColor(Design.text)
         .tracking(-1.08)
         .multilineTextAlignment(.center)
@@ -155,12 +230,15 @@ struct DayGoalFlowView: View {
   }
 
   private var setupScreen: some View {
-    ZStack(alignment: .topLeading) {
-      Text("What do you want to work on today?")
-        .font(.custom("InstrumentSerif-Regular", size: 24))
+    let focusStats = setupStats(for: .focus)
+    let distractionStats = setupStats(for: .distraction)
+
+    return ZStack(alignment: .topLeading) {
+      Text("Where do you want to spend your time today?")
+        .font(.custom("Instrument Serif", size: 24))
         .foregroundColor(.black)
         .multilineTextAlignment(.center)
-        .frame(width: 346, height: 24)
+        .frame(width: 620, height: 30)
         .position(x: 602, y: 64)
 
       GoalCategoryPool(
@@ -174,12 +252,13 @@ struct DayGoalFlowView: View {
 
       GoalSetupPanel(
         kind: .focus,
-        title: "Focus timer",
+        title: "Focus goal",
         durationMinutes: $draft.focusTargetMinutes,
         leadingStatTitle: "Yesterday’s focus",
-        leadingStatMinutes: Int(review.focusDuration / 60),
-        trailingStatTitle: "Average focus",
-        trailingStatMinutes: review.plan.focusTargetMinutes,
+        leadingStatMinutes: focusStats.yesterdayMinutes,
+        trailingStatTitle: "Last week’s Focus average",
+        trailingStatMinutes: focusStats.lastWeekAverageMinutes,
+        statScaleMaxMinutes: focusStats.scaleMaxMinutes,
         selectedCategories: resolvedSnapshots(for: .focus),
         onRemoveCategory: { removeCategory($0, from: .focus) },
         onDropCategory: { moveCategory($0, to: .focus) }
@@ -191,10 +270,11 @@ struct DayGoalFlowView: View {
         kind: .distraction,
         title: "Distraction limit",
         durationMinutes: $draft.distractionLimitMinutes,
-        leadingStatTitle: "Yesterday’s limit",
-        leadingStatMinutes: review.plan.distractionLimitMinutes,
-        trailingStatTitle: "Average limit",
-        trailingStatMinutes: Int(review.distractedDuration / 60),
+        leadingStatTitle: "Yesterday’s Distractions",
+        leadingStatMinutes: distractionStats.yesterdayMinutes,
+        trailingStatTitle: "Last week’s Distraction average",
+        trailingStatMinutes: distractionStats.lastWeekAverageMinutes,
+        statScaleMaxMinutes: distractionStats.scaleMaxMinutes,
         selectedCategories: resolvedSnapshots(for: .distraction),
         onRemoveCategory: { removeCategory($0, from: .distraction) },
         onDropCategory: { moveCategory($0, to: .distraction) }
@@ -203,10 +283,11 @@ struct DayGoalFlowView: View {
       .position(x: 804, y: 385.5)
 
       HStack(spacing: 10) {
-        secondaryButton("Skip today", action: onCancel)
+        secondaryButton("Skip today", action: onSkip)
 
         primaryButton("Confirm") {
           var plan = draft
+          plan.isSkipped = false
           let now = Int(Date().timeIntervalSince1970)
           if plan.createdAt <= 0 {
             plan.createdAt = now
@@ -239,6 +320,17 @@ struct DayGoalFlowView: View {
     draft.categorySnapshots(for: kind)
       .map(resolveSnapshot)
       .sorted { $0.sortOrder < $1.sortOrder }
+  }
+
+  private func setupStats(for kind: DayGoalCategoryKind) -> GoalSetupStatPair {
+    let snapshots = resolvedSnapshots(for: kind)
+    return GoalSetupStatPair(
+      yesterdayMinutes: setupReferenceStats.minutes(for: snapshots, period: .yesterday),
+      lastWeekAverageMinutes: setupReferenceStats.minutes(
+        for: snapshots,
+        period: .lastWeekAverage
+      )
+    )
   }
 
   private func resolveSnapshot(_ snapshot: DayGoalCategorySnapshot) -> DayGoalCategorySnapshot {
@@ -342,7 +434,7 @@ struct DayGoalFlowView: View {
   private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Text(title)
-        .font(.custom("Nunito", size: 13).weight(.medium))
+        .font(.custom("Figtree", size: 13).weight(.medium))
         .foregroundColor(.white)
         .lineLimit(1)
         .frame(width: 120, height: 36)
@@ -357,7 +449,7 @@ struct DayGoalFlowView: View {
   private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Text(title)
-        .font(.custom("Nunito", size: 13).weight(.medium))
+        .font(.custom("Figtree", size: 13).weight(.medium))
         .foregroundColor(Design.mutedBorder)
         .lineLimit(1)
         .frame(width: 120, height: 36)
@@ -398,7 +490,7 @@ private struct GoalCategoryPool: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Drag and drop to set the categories you want to track")
-        .font(.custom("Nunito", size: 12))
+        .font(.custom("Figtree", size: 12))
         .foregroundColor(Color(hex: "5E5E5E"))
 
       DayGoalFlowLayout(spacing: 8, rowSpacing: 6) {
@@ -453,6 +545,7 @@ private struct GoalSetupPanel: View {
   let leadingStatMinutes: Int
   let trailingStatTitle: String
   let trailingStatMinutes: Int
+  let statScaleMaxMinutes: Int
   let selectedCategories: [DayGoalCategorySnapshot]
   var onRemoveCategory: (String) -> Void
   var onDropCategory: (String) -> Void
@@ -484,6 +577,10 @@ private struct GoalSetupPanel: View {
     }
   }
 
+  private var statColumnWidth: CGFloat {
+    (panelWidth - 32 - 18) / 2
+  }
+
   var body: some View {
     VStack(spacing: 0) {
       HStack(spacing: 6) {
@@ -493,7 +590,7 @@ private struct GoalSetupPanel: View {
           .frame(width: 16, height: 16)
 
         Text(title)
-          .font(.custom("Nunito", size: 14))
+          .font(.custom("Figtree", size: 14))
           .foregroundColor(.white)
 
         Spacer()
@@ -529,7 +626,7 @@ private struct GoalSetupPanel: View {
   private var categoryBox: some View {
     VStack(alignment: .leading, spacing: 10) {
       Text("Categories")
-        .font(.custom("Nunito", size: 12))
+        .font(.custom("Figtree", size: 12))
         .foregroundColor(Color(hex: "7A7A7A"))
 
       VStack(alignment: .leading, spacing: 6) {
@@ -593,7 +690,9 @@ private struct GoalSetupPanel: View {
   private var footer: some View {
     HStack(spacing: 18) {
       goalStat(title: leadingStatTitle, minutes: leadingStatMinutes)
+        .frame(width: statColumnWidth, alignment: .leading)
       goalStat(title: trailingStatTitle, minutes: trailingStatMinutes)
+        .frame(width: statColumnWidth, alignment: .leading)
     }
     .padding(.horizontal, 16)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -605,6 +704,8 @@ private struct GoalSetupPanel: View {
       Text(title)
         .font(.custom("Figtree", size: 12))
         .foregroundColor(.black)
+        .lineLimit(1)
+        .minimumScaleFactor(0.82)
 
       HStack(spacing: 5) {
         RoundedRectangle(cornerRadius: 20)
@@ -613,9 +714,11 @@ private struct GoalSetupPanel: View {
 
         Text(formatShort(minutes: minutes))
           .font(.custom("Figtree", size: 12))
-          .foregroundColor(accent)
+          .foregroundColor(.black)
           .lineLimit(1)
+          .minimumScaleFactor(0.86)
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
 
@@ -632,8 +735,9 @@ private struct GoalSetupPanel: View {
   }
 
   private func statBarWidth(minutes: Int) -> CGFloat {
-    let ratio = min(max(CGFloat(minutes) / max(CGFloat(durationMinutes), 1), 0), 1)
-    return max(12, 62 * ratio)
+    guard minutes > 0, statScaleMaxMinutes > 0 else { return 0 }
+    let ratio = min(max(CGFloat(minutes) / CGFloat(statScaleMaxMinutes), 0), 1)
+    return max(12, 86 * ratio)
   }
 }
 
@@ -660,10 +764,27 @@ private struct GoalDurationPicker: View {
 
   var body: some View {
     HStack(spacing: 6) {
-      GoalNumberColumn(value: hoursBinding, range: 0...12, label: "Hours", step: 1)
-      GoalNumberColumn(value: minuteBinding, range: 0...55, label: "Mins", step: 5)
+      GoalNumberColumn(
+        value: hoursBinding,
+        range: 0...12,
+        label: "Hours",
+        step: 1,
+        numberStackLeft: 5.25,
+        numberStackTop: 12.89,
+        labelLeft: 41.5
+      )
+
+      GoalNumberColumn(
+        value: minuteBinding,
+        range: 0...55,
+        label: "Mins",
+        step: 5,
+        numberStackLeft: 5.25,
+        numberStackTop: 11.89,
+        labelLeft: 47
+      )
     }
-    .padding(7)
+    .padding(EdgeInsets(top: 7, leading: 9, bottom: 10, trailing: 11))
     .background(Color(hex: "F1F1F1"))
     .clipShape(RoundedRectangle(cornerRadius: 4))
     .overlay(
@@ -674,42 +795,58 @@ private struct GoalDurationPicker: View {
 }
 
 private struct GoalNumberColumn: View {
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
   @Binding var value: Int
   let range: ClosedRange<Int>
   let label: String
   let step: Int
+  let numberStackLeft: CGFloat
+  let numberStackTop: CGFloat
+  let labelLeft: CGFloat
   @State private var dragStartValue: Int?
   @State private var scrollAccumulator: CGFloat = 0
+  @State private var wheelOffset: CGFloat = 0
+
+  private let rowStride: CGFloat = 29
 
   var body: some View {
-    VStack(spacing: 6) {
-      wheelText(valueAtOffset(-2), size: 21, color: Color(hex: "A7A2A0"))
-        .frame(height: 24)
-
-      wheelText(valueAtOffset(-1), size: 23, color: Color(hex: "8A8582"))
-        .frame(height: 27)
-
-      HStack(alignment: .firstTextBaseline, spacing: 4) {
-        Text("\(value)")
-          .font(.custom("Figtree", size: 25))
-          .foregroundColor(.black)
-          .lineLimit(1)
-
-        Text(label)
-          .font(.custom("Figtree", size: 12))
-          .foregroundColor(.black)
-          .lineLimit(1)
+    ZStack(alignment: .topLeading) {
+      VStack(spacing: 6) {
+        wheelRow(offset: -2, size: 21, color: Color(hex: "AAA6A3"))
+        wheelRow(offset: -1, size: 23, color: Color(hex: "8A8582"))
+        wheelRow(offset: 0, size: 25, color: .black)
+        wheelRow(offset: 1, size: 23, color: Color(hex: "8A8582"))
+        wheelRow(offset: 2, size: 21, color: Color(hex: "AAA6A3"))
       }
-      .frame(height: 32)
+      .frame(width: numberStackWidth)
+      .offset(x: numberStackLeft, y: numberStackTop + wheelOffset)
 
-      wheelText(valueAtOffset(1), size: 23, color: Color(hex: "8A8582"))
-        .frame(height: 27)
+      Text(label)
+        .font(.custom("Figtree", size: 14))
+        .foregroundColor(.black)
+        .lineLimit(1)
+        .frame(width: labelWidth, alignment: .leading)
+        .offset(x: labelLeft, y: 72)
 
-      wheelText(valueAtOffset(2), size: 21, color: Color(hex: "A7A2A0"))
-        .frame(height: 24)
+      VStack(spacing: 0) {
+        Color.clear
+          .frame(height: 85)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            stepValue(by: -step)
+          }
+
+        Color.clear
+          .frame(height: 85)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            stepValue(by: step)
+          }
+      }
+      .frame(width: 83, height: 170)
     }
-    .padding(.vertical, 10)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .frame(width: 83, height: 170)
     .background(
       LinearGradient(
         colors: [
@@ -730,53 +867,163 @@ private struct GoalNumberColumn: View {
     .contentShape(Rectangle())
     .simultaneousGesture(numberDragGesture)
     .background(
-      GoalNumberScrollMonitor { deltaY in
-        applyScroll(deltaY)
+      GoalNumberScrollMonitor { deltaY, isPrecise in
+        applyScroll(deltaY, isPrecise: isPrecise)
       }
     )
     .help("Drag or scroll to adjust \(label.lowercased())")
   }
 
-  private func valueAtOffset(_ offset: Int) -> Int {
-    clamped(value + offset * step)
+  @ViewBuilder
+  private func wheelRow(offset: Int, size: CGFloat, color: Color) -> some View {
+    if let rowValue = valueAtOffset(offset) {
+      wheelText(rowValue, size: size, color: color)
+    } else {
+      Color.clear
+        .frame(width: numberStackWidth, height: size)
+    }
+  }
+
+  private func valueAtOffset(_ offset: Int) -> Int? {
+    let proposedValue = value + offset * step
+    guard range.contains(proposedValue) else { return nil }
+    return proposedValue
   }
 
   private func wheelText(_ value: Int, size: CGFloat, color: Color) -> some View {
-    Text("\(value)")
+    Text(formattedValue(value))
       .font(.custom("Figtree", size: size))
       .foregroundColor(color)
       .lineLimit(1)
+      .minimumScaleFactor(0.85)
+      .allowsTightening(true)
+      .monospacedDigit()
+      .frame(width: numberStackWidth, height: size, alignment: .center)
+  }
+
+  private var numberStackWidth: CGFloat {
+    step == 1 ? 34 : 38
+  }
+
+  private var labelWidth: CGFloat {
+    label == "Hours" ? 40 : 32
+  }
+
+  private func formattedValue(_ value: Int) -> String {
+    step == 5 ? String(format: "%02d", value) : "\(value)"
+  }
+
+  @discardableResult
+  private func stepValue(
+    by delta: Int,
+    resetsAccumulator: Bool = true,
+    showsWheelMotion: Bool = true
+  ) -> Bool {
+    let proposedValue = clamped(value + delta)
+    if resetsAccumulator {
+      scrollAccumulator = 0
+    }
+
+    guard proposedValue != value else {
+      settleWheel()
+      return false
+    }
+
+    let direction = proposedValue > value ? 1 : -1
+    value = proposedValue
+    if showsWheelMotion {
+      startWheelMotion(direction: direction)
+    }
+    return true
   }
 
   private var numberDragGesture: some Gesture {
-    DragGesture(minimumDistance: 2)
-      .onChanged { value in
+    DragGesture(minimumDistance: 1)
+      .onChanged { gestureValue in
         if dragStartValue == nil {
           dragStartValue = self.value
+          scrollAccumulator = 0
         }
 
         guard let startValue = dragStartValue else { return }
-        let steps = Int((-value.translation.height / 18).rounded())
-        self.value = clamped(startValue + steps * step)
+        let rawSteps = Int((-gestureValue.translation.height / rowStride).rounded())
+        let nextValue = clamped(startValue + rawSteps * step)
+        let appliedSteps = (nextValue - startValue) / step
+        let snappedTranslation = -CGFloat(appliedSteps) * rowStride
+        let remainingTranslation = gestureValue.translation.height - snappedTranslation
+
+        self.value = nextValue
+        self.wheelOffset = rubberBandedOffset(remainingTranslation, at: nextValue)
       }
-      .onEnded { _ in
+      .onEnded { gestureValue in
+        if let startValue = dragStartValue {
+          let rawSteps = Int((-gestureValue.translation.height / rowStride).rounded())
+          self.value = clamped(startValue + rawSteps * step)
+        }
         dragStartValue = nil
+        scrollAccumulator = 0
+        settleWheel()
       }
   }
 
-  private func applyScroll(_ deltaY: CGFloat) {
+  private func applyScroll(_ deltaY: CGFloat, isPrecise: Bool) {
+    guard deltaY != 0 else { return }
+
+    if !isPrecise {
+      let direction = deltaY > 0 ? step : -step
+      stepValue(by: direction)
+      return
+    }
+
     scrollAccumulator += deltaY
-    let threshold: CGFloat = 16
+    let threshold: CGFloat = 22
 
     while abs(scrollAccumulator) >= threshold {
       if scrollAccumulator > 0 {
-        value = clamped(value + step)
+        guard stepValue(by: step, resetsAccumulator: false) else {
+          scrollAccumulator = 0
+          break
+        }
         scrollAccumulator -= threshold
       } else {
-        value = clamped(value - step)
+        guard stepValue(by: -step, resetsAccumulator: false) else {
+          scrollAccumulator = 0
+          break
+        }
         scrollAccumulator += threshold
       }
     }
+  }
+
+  private func startWheelMotion(direction: Int) {
+    guard !reduceMotion else {
+      wheelOffset = 0
+      return
+    }
+
+    wheelOffset = direction > 0 ? rowStride : -rowStride
+    settleWheel()
+  }
+
+  private func settleWheel() {
+    guard !reduceMotion else {
+      wheelOffset = 0
+      return
+    }
+
+    withAnimation(.spring(duration: 0.22, bounce: 0)) {
+      wheelOffset = 0
+    }
+  }
+
+  private func rubberBandedOffset(_ offset: CGFloat, at currentValue: Int) -> CGFloat {
+    if currentValue == range.lowerBound && offset > 0 {
+      return offset * 0.35
+    }
+    if currentValue == range.upperBound && offset < 0 {
+      return offset * 0.35
+    }
+    return offset
   }
 
   private func clamped(_ proposedValue: Int) -> Int {
@@ -786,7 +1033,7 @@ private struct GoalNumberColumn: View {
 }
 
 private struct GoalNumberScrollMonitor: NSViewRepresentable {
-  var onScroll: (CGFloat) -> Void
+  var onScroll: (CGFloat, Bool) -> Void
 
   func makeNSView(context: Context) -> ScrollMonitorView {
     let view = ScrollMonitorView()
@@ -803,7 +1050,7 @@ private struct GoalNumberScrollMonitor: NSViewRepresentable {
   }
 
   final class ScrollMonitorView: NSView {
-    var onScroll: ((CGFloat) -> Void)?
+    var onScroll: ((CGFloat, Bool) -> Void)?
     private var monitor: Any?
 
     override func viewDidMoveToWindow() {
@@ -829,7 +1076,7 @@ private struct GoalNumberScrollMonitor: NSViewRepresentable {
           return event
         }
 
-        self.onScroll?(event.scrollingDeltaY)
+        self.onScroll?(event.scrollingDeltaY, event.hasPreciseScrollingDeltas)
         return nil
       }
     }
@@ -879,7 +1126,7 @@ private struct GoalReviewCard: View {
           Text(title)
           Text(subtitle)
         }
-        .font(.custom("InstrumentSerif-Regular", size: 15))
+        .font(.custom("Figtree", size: 15))
         .foregroundColor(.black)
 
         Spacer()
@@ -975,7 +1222,7 @@ private struct GoalCategoryBreakdown: View {
 
             Text(formatDuration(category.duration))
               .font(.custom("Figtree", size: 8))
-              .foregroundColor(category.color)
+              .foregroundColor(.black)
               .lineLimit(1)
 
             Spacer(minLength: 0)
@@ -1066,7 +1313,7 @@ private struct GoalCategoryChip: View {
         .frame(width: 16, height: 16)
 
       Text(title)
-        .font(.custom("Nunito", size: 12))
+        .font(.custom("Figtree", size: 12))
         .foregroundColor(Color(hex: "333333"))
         .lineLimit(1)
         .minimumScaleFactor(0.8)
@@ -1077,8 +1324,7 @@ private struct GoalCategoryChip: View {
           .foregroundColor(Color(hex: "777777"))
       }
     }
-    .padding(.horizontal, 6)
-    .padding(.vertical, 4)
+    .padding(4)
     .background(background)
     .clipShape(RoundedRectangle(cornerRadius: 6))
     .overlay(
@@ -1187,7 +1433,7 @@ private struct DayGoalFlowLayout: Layout {
     ),
     plan: plan,
     categories: categories,
-    onCancel: {},
+    onSkip: {},
     onConfirm: { _ in }
   )
 }

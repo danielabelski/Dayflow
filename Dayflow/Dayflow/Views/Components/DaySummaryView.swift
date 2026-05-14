@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+private let dayGoalReviewShownTimelineDayKey = "dayGoalReviewShownTimelineDay"
+
 struct DaySummaryView: View {
   let selectedDate: Date
   let categories: [TimelineCategory]
@@ -14,6 +16,8 @@ struct DaySummaryView: View {
   let cardsToReviewCount: Int
   let reviewRefreshToken: Int
   let recordingControlMode: RecordingControlMode
+  var goalPromptDay: String? = nil
+  var onGoalPromptHandled: ((String) -> Void)? = nil
   var onReviewTap: (() -> Void)? = nil
   var onShowGoalFlow: ((DayGoalFlowPresentation) -> Void)? = nil
 
@@ -25,7 +29,10 @@ struct DaySummaryView: View {
   @State private var distractionCategoryIDs: Set<UUID> = []
   @State private var isEditingDistractionCategories = false
   @State private var dayGoalPlan: DayGoalPlan?
+  @State private var explicitYesterdayGoalPlan: DayGoalPlan?
   @State private var yesterdayGoalReview: DayGoalReviewSnapshot?
+  @State private var goalSetupReferenceStats = DayGoalSetupReferenceStats.empty
+  @State private var handledGoalPromptDay: String?
 
   // MARK: - Pre-computed Stats (to avoid expensive parsing during body evaluation)
   // These are computed on background thread when data loads, avoiding main thread hangs
@@ -171,6 +178,9 @@ struct DaySummaryView: View {
     .onChange(of: selectedDate) {
       loadData()
     }
+    .onChange(of: goalPromptDay) {
+      handleGoalPromptIfReady()
+    }
     .onChange(of: reviewRefreshToken) {
       loadReviewSummary()
     }
@@ -203,6 +213,7 @@ struct DaySummaryView: View {
     let dayString = dayInfo.dayString
     let previousDayInfo = previousTimelineDayInfo
     let storageManager = storageManager
+    let currentTimelineDate = timelineDisplayDate(from: selectedDate)
 
     // Capture current state for background computation
     let currentCategories = categories
@@ -244,6 +255,12 @@ struct DaySummaryView: View {
         storageManager: storageManager,
         categories: currentCategories
       )
+      let explicitYesterdayPlan = storageManager.fetchDayGoalPlan(forDay: previousDayInfo.dayString)
+      let setupReferenceStats = self.makeGoalSetupReferenceStats(
+        currentTimelineDate: currentTimelineDate,
+        storageManager: storageManager,
+        categories: currentCategories
+      )
 
       await MainActor.run {
         self.timelineCards = cards
@@ -257,7 +274,10 @@ struct DaySummaryView: View {
         self.isLoading = false
         self.hasCompletedInitialLoad = true
         self.reviewSummary = summary
+        self.explicitYesterdayGoalPlan = explicitYesterdayPlan
         self.yesterdayGoalReview = yesterdayReview
+        self.goalSetupReferenceStats = setupReferenceStats
+        self.handleGoalPromptIfReady()
       }
     }
   }
@@ -289,6 +309,7 @@ struct DaySummaryView: View {
       focusCategories: targetFocusCategories,
       distractionLimitDuration: effectiveGoalPlan.distractionLimitDuration,
       distractedDuration: totalDistractedTime,
+      showsDisabledState: effectiveGoalPlan.isSkipped,
       recordingControlMode: recordingControlMode,
       onSetGoals: {
         presentGoalFlow()
@@ -297,7 +318,14 @@ struct DaySummaryView: View {
     .frame(height: Design.targetsHeight)
   }
 
-  private func presentGoalFlow() {
+  private var canShowYesterdayGoalReview: Bool {
+    guard explicitYesterdayGoalPlan?.isSkipped == false else { return false }
+    return UserDefaults.standard.string(forKey: dayGoalReviewShownTimelineDayKey)
+      != timelineDayInfo.dayString
+  }
+
+  private func presentGoalFlow(initialScreen: DayGoalFlowInitialScreen? = nil) {
+    let resolvedInitialScreen = initialScreen ?? (canShowYesterdayGoalReview ? .review : .setup)
     let review =
       yesterdayGoalReview
       ?? DayGoalReviewSnapshot.empty(
@@ -313,9 +341,32 @@ struct DaySummaryView: View {
         review: review,
         plan: effectiveGoalPlan,
         categories: selectableCategories,
+        setupReferenceStats: goalSetupReferenceStats,
+        initialScreen: resolvedInitialScreen,
+        onSkip: skipGoalPlan,
         onConfirm: saveGoalPlan
       )
     )
+    markYesterdayGoalReviewShownIfNeeded(initialScreen: resolvedInitialScreen)
+  }
+
+  private func markYesterdayGoalReviewShownIfNeeded(initialScreen: DayGoalFlowInitialScreen) {
+    guard initialScreen == .review else { return }
+    UserDefaults.standard.set(timelineDayInfo.dayString, forKey: dayGoalReviewShownTimelineDayKey)
+  }
+
+  private func handleGoalPromptIfReady() {
+    guard hasCompletedInitialLoad else { return }
+    guard let goalPromptDay else { return }
+    guard goalPromptDay == timelineDayInfo.dayString else { return }
+    guard handledGoalPromptDay != goalPromptDay else { return }
+    guard onShowGoalFlow != nil else { return }
+
+    handledGoalPromptDay = goalPromptDay
+    let initialScreen: DayGoalFlowInitialScreen =
+      canShowYesterdayGoalReview ? .review : .setup
+    presentGoalFlow(initialScreen: initialScreen)
+    onGoalPromptHandled?(goalPromptDay)
   }
 
   private var daySoFarSection: some View {
@@ -513,6 +564,17 @@ struct DaySummaryView: View {
     Task.detached(priority: .utility) {
       storageManager.saveDayGoalPlan(normalized)
     }
+  }
+
+  private func skipGoalPlan() {
+    var skipped = effectiveGoalPlan
+    let now = Int(Date().timeIntervalSince1970)
+    if skipped.createdAt <= 0 {
+      skipped.createdAt = now
+    }
+    skipped.updatedAt = now
+    skipped.isSkipped = true
+    saveGoalPlan(skipped)
   }
 
   private func normalizedPlan(_ plan: DayGoalPlan) -> DayGoalPlan {
@@ -898,6 +960,75 @@ struct DaySummaryView: View {
         categories: categories
       )
     )
+  }
+
+  nonisolated private func makeGoalSetupReferenceStats(
+    currentTimelineDate: Date,
+    storageManager: StorageManaging,
+    categories: [TimelineCategory]
+  ) -> DayGoalSetupReferenceStats {
+    let calendar = Calendar.current
+    let dayStrings = (1...7).compactMap { offset -> String? in
+      guard let date = calendar.date(byAdding: .day, value: -offset, to: currentTimelineDate)
+      else {
+        return nil
+      }
+      return timelineDisplayDate(from: date).getDayInfoFor4AMBoundary().dayString
+    }
+    guard let yesterdayDayString = dayStrings.first else { return .empty }
+
+    let yesterdayMaps = categoryDurationMaps(
+      forDay: yesterdayDayString,
+      storageManager: storageManager,
+      categories: categories
+    )
+
+    var lastWeekByIDTotals: [String: TimeInterval] = [:]
+    var lastWeekByNameTotals: [String: TimeInterval] = [:]
+    for dayString in dayStrings {
+      let maps = categoryDurationMaps(
+        forDay: dayString,
+        storageManager: storageManager,
+        categories: categories
+      )
+      for (categoryID, duration) in maps.byID {
+        lastWeekByIDTotals[categoryID, default: 0] += duration
+      }
+      for (categoryName, duration) in maps.byName {
+        lastWeekByNameTotals[categoryName, default: 0] += duration
+      }
+    }
+
+    let dayCount = max(Double(dayStrings.count), 1)
+    return DayGoalSetupReferenceStats(
+      yesterdayByCategoryID: yesterdayMaps.byID,
+      yesterdayByCategoryName: yesterdayMaps.byName,
+      lastWeekAverageByCategoryID: lastWeekByIDTotals.mapValues { $0 / dayCount },
+      lastWeekAverageByCategoryName: lastWeekByNameTotals.mapValues { $0 / dayCount }
+    )
+  }
+
+  nonisolated private func categoryDurationMaps(
+    forDay dayString: String,
+    storageManager: StorageManaging,
+    categories: [TimelineCategory]
+  ) -> (byID: [String: TimeInterval], byName: [String: TimeInterval]) {
+    let cards = storageManager.fetchTimelineCards(forDay: dayString)
+    let precomputed = precomputeCardDurations(cards)
+    let categoryDurations = computeCategoryDurations(from: precomputed, categories: categories)
+    return durationMaps(from: categoryDurations)
+  }
+
+  nonisolated private func durationMaps(
+    from categoryDurations: [CategoryTimeData]
+  ) -> (byID: [String: TimeInterval], byName: [String: TimeInterval]) {
+    var byID: [String: TimeInterval] = [:]
+    var byName: [String: TimeInterval] = [:]
+    for item in categoryDurations {
+      byID[item.id, default: 0] += item.duration
+      byName[normalizedCategoryName(item.name), default: 0] += item.duration
+    }
+    return (byID, byName)
   }
 
   nonisolated private static func carriedForwardGoalPlan(
