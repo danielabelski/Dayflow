@@ -83,6 +83,7 @@ struct MainView: View {
   @State var timelineFailureToastPayload: TimelineFailureToastPayload?
   @State var showScreenRecordingPermissionNotice = false
   @State var didDismissScreenRecordingPermissionNoticeThisSession = false
+  @State var pendingGoalPromptDay: String?
   @Binding var goalFlowPresentation: DayGoalFlowPresentation?
 
   let rateSummaryFooterHeight: CGFloat = 28

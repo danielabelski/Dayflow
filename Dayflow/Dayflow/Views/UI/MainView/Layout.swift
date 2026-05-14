@@ -285,6 +285,7 @@ extension MainView {
     startDayChangeTimer()
     loadWeeklyTrackedMinutes()
     updateCardsToReviewCount()
+    requestDailyGoalPromptIfNeeded()
   }
 
   private func performMainLayoutOnDisappear() {
@@ -440,6 +441,7 @@ extension MainView {
 
     // Check if day changed while app was backgrounded
     handleMinuteTickForDayChange()
+    requestDailyGoalPromptIfNeeded()
     // Ensure timer is running
     if dayChangeTimer == nil {
       startDayChangeTimer()
@@ -1191,6 +1193,10 @@ extension MainView {
           appState: appState,
           pauseManager: pauseManager
         ),
+        goalPromptDay: pendingGoalPromptDay,
+        onGoalPromptHandled: { day in
+          markDailyGoalPromptHandled(day: day)
+        },
         onReviewTap: {
           guard reviewPromptCount > 0 else { return }
           withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {

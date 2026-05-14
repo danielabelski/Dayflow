@@ -7,6 +7,8 @@ private let cachedDayFormatter: DateFormatter = {
   return formatter
 }()
 
+private let dailyGoalPromptHandledDayKey = "dayGoalPromptHandledTimelineDay"
+
 extension MainView {
   func startDayChangeTimer() {
     stopDayChangeTimer()
@@ -34,6 +36,47 @@ extension MainView {
           scrollToNowTick &+= 1
         }
       }
+    }
+  }
+
+  func requestDailyGoalPromptIfNeeded() {
+    guard DayGoalPreferences.showDailyGoalPopups else {
+      pendingGoalPromptDay = nil
+      return
+    }
+
+    let today = timelineDisplayDate(from: Date())
+    let promptDay = cachedDayFormatter.string(from: today)
+
+    guard UserDefaults.standard.string(forKey: dailyGoalPromptHandledDayKey) != promptDay
+    else {
+      return
+    }
+    guard pendingGoalPromptDay != promptDay else { return }
+    guard goalFlowPresentation == nil else { return }
+
+    if StorageManager.shared.fetchDayGoalPlan(forDay: promptDay) != nil {
+      markDailyGoalPromptHandled(day: promptDay)
+      return
+    }
+
+    selectedActivity = nil
+    setSelectedDate(today)
+    setTimelineMode(.day)
+
+    if selectedIcon != .timeline {
+      withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) {
+        selectedIcon = .timeline
+      }
+    }
+
+    pendingGoalPromptDay = promptDay
+  }
+
+  func markDailyGoalPromptHandled(day: String) {
+    UserDefaults.standard.set(day, forKey: dailyGoalPromptHandledDayKey)
+    if pendingGoalPromptDay == day {
+      pendingGoalPromptDay = nil
     }
   }
 
